@@ -1,0 +1,32 @@
+---
+title: "Task_Kelly"
+format: html
+editor: visual
+---
+
+## Correlation Plot
+
+```{r}
+library(corrplot)
+library(ggplot2)
+library(magrittr)
+library(dplyr)
+```
+
+```{r}
+numeric_var_selected <- c("operating_profit_margin", "ebitda_margin", "roa", "debt_to_assets", "debt_to_equity", "int_coverage", "debt_service_coverage", "cash_coverage", "current_ratio", "cash_ratio")
+credit_risk_new <- credit_risk_data %>%
+  select(all_of(numeric_var_selected)) %>%
+  na.omit()
+
+# Calculate the correlation matrix between selected numeric variables and fin_indy
+correlation_matrix <- cor(credit_risk_new)
+
+#adjust margin
+par(mar=c(5, 5, 6, 2))
+# Plot the correlation matrix as a heatmap
+corrplot(correlation_matrix, method = "color", addCoef.col = "black", tl.col = "black", tl.srt = 35, tl.cex = 0.3, number.cex = 0.5)
+
+# Add title to the plot
+title("Figure 1: Correlation between Numeric Fundamentals", line = 5.1, cex.main=0.8)
+```
