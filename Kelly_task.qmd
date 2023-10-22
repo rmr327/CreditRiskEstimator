@@ -30,3 +30,70 @@ corrplot(correlation_matrix, method = "color", addCoef.col = "black", tl.col = "
 # Add title to the plot
 title("Figure 1: Correlation between Numeric Fundamentals", line = 5.1, cex.main=0.8)
 ```
+
+## Market Capitalization
+
+```{r}
+plot1_capital <- ggplot(credit_risk_data, aes(x = marketCapitalization, y = credit_spread, col = Sector)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = F) +
+  labs(x= 'Market Capitalization (in million dollars)', y = 'Credit spread (%)')
+```
+
+```{r}
+plot2_capital <- ggplot(credit_risk_data, aes(x = marketCapitalization, y = credit_spread)) +
+  geom_point() +
+  facet_wrap(~Sector) +
+  labs(title = "Market Capitalization vs. Credit Spread by Sector",
+       x = "Market Capitalization (in million dollars)",
+       y = "Credit Spread") +
+  theme_minimal()
+```
+
+Market Capitalization Analysis :
+
+(includes a potential challenge)
+
+Both visualizations seem to demonstrate an inverse relationship between Market Capitalization and Credit Spread. This is surprising since we might assume better access to credit for bigger companies. However, the significance needs to be investigated more. In almost all sectors, there is a relatively wide range of credit spread being represented in the lower rank Market Capitalization. This might be caused by the discrepancy between values of Market Capitalization, with some outliers that own very high Market Capitalization. This could be a potential challenge when we are cleaning our variables since we need to make decisions on whether the outliers should be kept, excluded or normalized.
+
+## Debt
+
+```{r}
+library(ggExtra)
+
+plot <- ggplot(credit_risk_data, aes(x = debt_to_assets, y = credit_spread)) +
+  geom_point() +
+  theme_minimal() +
+  labs(x = 'Credit to Asset', y = 'Credit Spread (%)', title = 'Figure 1_debt: Correlation between debt to assets and credit spread with density distribution')
+plot1_debt <- ggExtra::ggMarginal(plot, type = "histogram")
+plot1_debt
+```
+
+While credit spread follows the bell-shape of a normal distribution, the density distribution of debt to assets presents multiple peaks and downturns. This suggests that the relationship between debt to assets and credit spread might depend on the industry sector. This seems to be proven true by Figure 2_debt since each sector demonstrates different relationships between the two variables, with some being positive and the other being negative. This could be a potential challenge if we want to incorporate debt to assets into our prediction model. It could impact accuracy and efficiency negatively, as well as creating potential over-fitting. It might be helpful to include an interaction term between debt to assets and sector.
+
+```{r}
+plot2_debt <- ggplot(credit_risk_data, aes(x = debt_to_assets, y = credit_spread, col = Sector)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = F) +
+  labs(x= 'Debt to Assets', y = 'Credit spread (%)', title = 'Figure 2_debt: Correlation between credit spread and debt to assets with fitted lines for each sector')
+plot2_debt
+```
+
+```{r}
+plot2 <- ggplot(credit_risk_data, aes(x = debt_to_equity, y = credit_spread)) +
+  geom_point() +
+  theme_minimal() +
+  labs(x = 'Credit to Equity', y = 'Credit Spread (%)', title = 'Figure 3_debt: Correlation between debt to equity and credit spread with density distribution')
+plot3_debt <- ggExtra::ggMarginal(plot2, type = "histogram")
+plot3_debt
+```
+
+```{r}
+plot4_debt <- ggplot(credit_risk_data, aes(x = debt_to_equity, y = credit_spread, col = Sector)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = F) +
+  labs(x= 'Debt to Equity', y = 'Credit spread (%)', title = 'Figure 4_debt: Correlation between credit spread and debt to equity with fitted lines for each sector')
+plot4_debt
+```
+
+From the density distribution of debt to equity, we can see that most data centered around "debt to equity equals 0." This suggests that there are a few outliers with debt smaller than -100 or larger than 150. Removing these outliers might present a better view of the relationship between the two variables. This again raises potential challenge on how to clean the variables and deciding what would be considered as an outlier.
