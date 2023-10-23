@@ -183,7 +183,7 @@ Market Capitalization and Credit Spread: Both visualizations seem to demonstrate
 
 Figure 2.5: Correlation between Market Capitalization and Credit Spread
 
-```{r, echo=FALSE, fig.width=8, fig.height=2.3}
+```{r, echo=FALSE, fig.width=8, fig.height=2.6}
 plot1_capital <- ggplot(bonds, aes(x = marketCapitalization, y = credit_spread, col = Sector)) +
   geom_point() +
   geom_smooth(method = 'lm', se = F) +
@@ -215,6 +215,34 @@ corrplot(correlation_matrix, method = "color", addCoef.col = "black", tl.col = "
 #title("Figure 1: Correlation between Numeric Fundamentals", line = 5.1, cex.main=0.8)
 ```
 
+```{r}
+#| echo: false
+bonds %>%
+  select(int_coverage, debt_service_coverage, cash_coverage, current_ratio, cash_ratio
+) %>% #operating_profit_margin, ebitda_margin, score) %>%
+  tbl_summary(
+    statistic = list(all_continuous()  ~ "Mean: {mean}, StDev: {sd}, Median: {median}",
+                     all_categorical() ~ "Count: {n}   %: ({p}%)"),
+
+    digits = list(all_continuous()  ~ c(2, 2),
+                  all_categorical() ~ c(0, 1)),
+    label = list(
+      int_coverage ~ "Interest Coverage (ratio)",
+      debt_service_coverage ~ "Debt Service Coverage (ratio)",
+      cash_coverage ~ "Cash Coverage (ratio)",
+      current_ratio ~ "Current Ratio (ratio)",
+      cash_ratio ~ "Cash Ratio (ratio)"
+      #operating_profit_margin ~ "Operating Profit Margin (ratio)",
+      #ebitda_margin ~ "Ebitda Margin (ratio)",
+      #score ~ "Sentiment Score"
+      ),
+  ) %>%
+  modify_header(label = "**Predictor / Outcome Variables**") %>%
+  modify_caption("Predictor / Outcome Statistics") %>%
+  bold_labels()
+  
+```
+
 Debt and Credit Spread: While credit spread follows the bell-shape of a normal distribution, the density distribution of debt to assets presents multiple peaks and downturns. This suggests that the relationship between debt to assets and credit spread might depend on the industry sector. This seems to be proven true by Figure 3.2 since each sector demonstrates different relationships between the two variables, with some being positive and the other being negative. This could be a potential challenge if we want to incorporate debt to assets into our prediction model. It could impact accuracy and efficiency negatively, as well as creating potential over-fitting. It might be helpful to include an interaction term between debt to assets and sector.
 
 Figure 3.2: Correlation between Credit Spread and Credit to Asset
@@ -226,6 +254,10 @@ From the density distribution of debt to equity (Figure 3.3), we can see that mo
 Figure 3.3: Correlation between Credit Spread and Credit to Equity
 
 image
+
+Interest Coverage, Debt Service Coverage, and Cash Coverage provide valuable insights into a company's creditworthiness and financial stability. A stronger financial position, as indicated by higher ratios, tends to correlate with a lower credit risk, potentially leading to narrower credit spreads and more favorable credit ratings.
+
+Cash ratio indicates a company's ability to pay off short-term liabilities with its cash and equivalents, while the current ratio measures its overall liquidity. These ratios are related to credit spread and credit rating because higher liquidity and solvency, reflected in these ratios, typically indicate lower credit risk, which may lead to narrower credit spreads and higher credit rating scores. Since they are highly correlated, using either cash ratio or current ratio can provide similar insights into a company's credit risk.
 
 ## Potential Challenges
 
