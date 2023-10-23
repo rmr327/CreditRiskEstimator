@@ -1,6 +1,17 @@
 ---
-title: "group_eda_rmr"
-format: pdf
+format:
+  pdf:  
+    # Fonts  
+    mainfont: Helvetica Neue  
+    fontsize: 12pt  
+    papersize: A4  
+    margin-top: 25mm  
+    margin-bottom: 25mm  
+    margin-left: 25mm  
+    margin-right: 25mm  
+    toc: true  
+    toc-depth: 2  
+    
 editor: visual
 ---
 
@@ -12,7 +23,6 @@ library(ggplot2)
 library(magrittr)
 library(dplyr)
 library(ggplot2)
-library(tidyverse)
 library(knitr)
 library(gtsummary)
 library(gridExtra)
