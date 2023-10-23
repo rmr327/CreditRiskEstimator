@@ -28,7 +28,7 @@ par(mar=c(5, 5, 6, 2))
 corrplot(correlation_matrix, method = "color", addCoef.col = "black", tl.col = "black", tl.srt = 35, tl.cex = 0.3, number.cex = 0.5)
 
 # Add title to the plot
-title("Figure 1: Correlation between Numeric Fundamentals", line = 5.1, cex.main=0.8)
+#title("Figure 1: Correlation between Numeric Fundamentals", line = 5.1, cex.main=0.8)
 ```
 
 ## Market Capitalization
