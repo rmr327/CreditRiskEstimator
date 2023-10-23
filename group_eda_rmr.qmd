@@ -1,0 +1,183 @@
+---
+title: "group_eda_rmr"
+format: pdf
+editor: visual
+---
+
+## Data Overview
+
+```{r}
+#| echo: false
+knitr::opts_chunk$set(message=FALSE, warning=FALSE)
+suppressMessages(library(ggplot2))
+suppressMessages(library(tidyverse))
+suppressMessages(library(knitr))
+suppressMessages(library(gtsummary))
+suppressMessages(library(gridExtra))
+```
+
+```{r}
+#| echo: false
+url <- '/Users/rakeenrouf/Downloads/final dataset.csv'
+bonds <- read.csv(url)
+```
+
+```{r, include=FALSE}
+#| echo: false
+head(bonds)
+```
+
+```{r}
+#| echo: false
+par(mar = c(2, 2, 1, 0.5), pin = c(3, 2))
+bonds %>% 
+  select(Duration, roa, debt_to_assets, debt_to_equity, int_coverage, debt_service_coverage, cash_coverage, current_ratio, cash_ratio, operating_profit_margin, ebitda_margin, score, Sector) %>%
+  tbl_summary(
+    statistic = list(all_continuous()  ~ "Mean: {mean}, StDev: {sd}, Median: {median}",
+                     all_categorical() ~ "Count: {n}   %: ({p}%)"),
+
+    digits = list(all_continuous()  ~ c(2, 2),
+                  all_categorical() ~ c(0, 1)),
+    type = list(Duration  ~ "continuous",
+                roa ~ "continuous",
+                debt_to_assets ~ "continuous",
+                Sector ~ "categorical"),
+    label  = list(Duration      ~ "Duration (years)",
+                  roa ~ "Rate of Amortization (%)",
+                  debt_to_assets ~ "Debt to Asset (ratio)",
+                  debt_to_equity ~ "Debt to Equity (ratio)",
+                  Sector ~ "Industry Sector", 
+                  int_coverage ~ "Interest Coverage (ratio)",
+                  debt_service_coverage ~ "Debt Service Coverage (ratio)",
+                  cash_coverage ~ "Cash Coverage (ratio)", 
+                  current_ratio ~ "Current Ratio (ratio)", 
+                  cash_ratio ~ "Cash Ratio (ratio)",
+                  operating_profit_margin ~ "Operating Profit Margin (ratio)", 
+                  ebitda_margin ~ "Ebidta Margin (ratio)",
+                  score ~ "Sentiment Score"
+                  ),
+  ) %>%
+  modify_header(label = "**Predictor / Outcome Variables**") %>%
+  modify_caption("Predictor / Outcome Statistics") %>%
+  bold_labels()
+```
+
+## Outcome Variables
+
+The `Credit Spread` is a continuous outcome variable and represents the difference in yield or interest rate between a particular bond and a benchmark bond with similar characteristics but considered to be risk-free. For example, if a corporate bond yields 5% and a comparable risk-free government bond yields 3%, then the credit spread of the corporate bond is 2%. The distribution of credit risk in the data set with respect to the figure "x" below, appears to follow a normal distribution with a high positive skew. The mean Standard Deviation and Median of Credit Spread are as follows: 0.47, 0.49, 0.44.
+
+The `Credit Rating` is a ordinal categorical variable, and represents the composite credit rating issued to each company by Bloomberg. When we look at the distribution of Credit Ratings in figure 'X', we notice that it appears more scattered and less structured compared to the distribution of Credit Spreads. To make sense of this, we're considering combining certain categories of Credit Ratings. This could potentially help to reduce the variability and make the data clearer. We'll discuss this further in the potential problem section. It's worth noting that the 'BBB' category has a much larger number of observations in the data set compared to other categories. This makes it a significant portion (30.5%) of the data.
+
+*Figure 1.1, 1.2: Outcome Variables*
+
+```{r}
+#| echo: false
+plot_1 <- ggplot(bonds, aes(x = factor(BB_COMPOSITE), fill = BB_COMPOSITE)) +
+  geom_bar() +
+  labs(x = "Bloomberg Composite Credit Rating", y = NULL, title = "Histogram of Credit Rating") +
+  theme_minimal() +
+  theme(axis.text.x = element_blank())  # Remove x-axis ticks
+
+# Create the histogram plot
+plot_2 <- ggplot(bonds, aes(x = credit_spread)) +
+  geom_histogram(binwidth = 0.2, fill = "skyblue", color = "black") +
+  labs(x = "Credit Spread", y = "Frequency", 
+       title = "Histogram of Credit Spread") +
+  theme_minimal()
+
+grid.arrange(plot_2, plot_1, ncol = 2)
+```
+
+## Primary Relationships of Interest
+
+The sentiment score exhibits a notable influence on the behavior of credit spreads, varying significantly across different sectors. For instance, in Figure 2, distinct sectors demonstrate varying correlations between Sentiment Score and Credit Spread. Some sectors display a positive correlation, while others show a negative or neutral association. Further examination revealed that sectors characterized by a more elastic demand, such as Technology and Banking, tend to exhibit a more pronounced positive correlation. Conversely, sectors with a more inelastic demand, like Basic Industry and Cyclical Consumer Industry, demonstrate a largely neutral response to the Sentiment Score.
+
+*Figure 2.1, 2.2* , 2.3: Sentiment Score Vs Credit Spread
+
+```{r}
+#| echo: false
+# sentiment vs spread colored by sector
+sectors_corr <- c("Technology", "Energy", "Banking", 'Consumer Non-Cyclical', 'Electric', 'Natural Gas')
+
+sectors_anti_corr <- c("Brokerage/Asset Managers/Exchanges", "Capital Goods")
+
+bonds_filtered <- bonds %>%
+  filter(Sector %in% sectors_corr)
+
+bonds_filtered_2 <- bonds %>%
+  filter(!Sector %in% sectors_corr & !Sector %in% sectors_anti_corr)
+
+bonds_filtered_3 <- bonds %>%
+  filter(Sector %in% sectors_anti_corr)
+
+p1 <- ggplot(bonds_filtered, aes(x = score, y = credit_spread, col = Sector)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = F) +
+  labs(x= 'Sentiment Score', y = 'Credit spread (%)') + 
+  ggtitle("Positive Correlation") +
+  theme(legend.position = "none")
+
+p2 <- ggplot(bonds_filtered_2, aes(x = score, y = credit_spread, col = Sector)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = F) +
+  labs(x= 'Sentiment Score', y = NULL)  + 
+  ggtitle("Neutral Correlation") +
+  theme(legend.position = "none")
+
+p3 <- ggplot(bonds_filtered_3, aes(x = score, y = credit_spread, col = Sector)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = F) +
+  labs(x= 'Sentiment Score', y = NULL) + 
+  ggtitle("Negative Correlation") +
+  theme(legend.position = "none")
+
+grid.arrange(p1, p2, p3,  ncol = 3)
+```
+
+The data in Figure 3.1 suggests that companies with a credit rating of B (including BBB, BB+, etc.) exhibit a considerably broader interquartile range compared to those with an A rating. Additionally, all statistical measures in the box plot for A-rated companies are consistently lower when compared to their B-rated counterparts.*Figure 3.1*: Sentiment Score Vs Credit Ratings
+
+```{r}
+most_common <- function(column) {
+  frequencies <- table(column)
+  most_common_category <- names(frequencies)[which.max(frequencies)]
+  return(most_common_category)
+}
+
+bonds_agg <- bonds %>%
+  group_by(ticker) %>%
+  summarise(mean_value = mean(score), most_freq = most_common(BB_COMPOSITE))
+
+ggplot(bonds_agg, aes(x = most_freq, y = mean_value)) +
+  geom_boxplot() +
+  labs(x = "BloomBerg Credit Ratings", y = "Sentiment Score") +
+  theme_minimal()
+```
+
+\
+
+## Other Characteristics
+
+Other variables in the data set includes Other Technical Indicator such as Rate of Amortization, Ebidta Margin, Operating Profit Margin, etc.
+
+## Potential Challenges
+
+*Figure 3.1*: Histogram of Number of Bonds per Ticker
+
+```{r}
+#| echo: false
+ticker_count <- bonds %>% 
+  group_by(ticker) %>% 
+  summarise(count = n())
+
+ggplot(ticker_count, aes(x = count)) +
+  geom_histogram(binwidth = 10, boundary = 0, fill = "blue", color = "black") +
+  labs(x = "Count of Bonds in Data set", y = "Number of Tickers (companies)") +
+  theme_minimal() +
+  theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm"))
+```
+
+One challenge our team may encounter relates to the varying frequencies at which each unique company's ticker appears in our raw data. As depicted in the figure above, most tickers have between 1 and 10 bonds in our data set. However, there are a few tickers at the higher end, with between 60 and 70 bonds. This imbalance leads to a data set where models trained on it might exhibit a bias towards companies with more bonds (observations). To address this concern, the team could implement strategies for handling the imbalanced data set. Some potential approaches could include, Weighted Sampling, Stratified Sampling, Re sampling Techniques, Etc.
+
+Another potential challenge arises from the low counts in the categorical variables, specifically in Bloomberg Composite Rating (the outcome variable) and Industry Sector. In both cases, there are classes with limited representation. For instance, Banking and Brokerage/Asset Managers/Exchanges collectively account for only \~10% of the total data. One argument can be made that these industries share enough similarities to be collapsed into a single category. By consolidating certain categories, the team aims to mitigate the issue of low counts.
+
+Once the adjustmentd are made, the team is confident that the resulting data set will be of sufficient size to effectively address the research questions.
