@@ -3,14 +3,12 @@ format:
   pdf:  
     # Fonts  
     mainfont: Helvetica Neue  
-    fontsize: 12pt  
+    fontsize: 10pt  
     papersize: A4  
     margin-top: 25mm  
     margin-bottom: 25mm  
     margin-left: 25mm  
     margin-right: 25mm  
-    toc: true  
-    toc-depth: 2  
     
 editor: visual
 ---
@@ -24,8 +22,8 @@ library(magrittr)
 library(dplyr)
 library(ggplot2)
 library(knitr)
-library(gtsummary)
 library(gridExtra)
+library(gtsummary)
 ```
 
 ```{r}
@@ -39,7 +37,7 @@ bonds <- read.csv("credit_risk_data.csv")
 head(bonds)
 ```
 
-```{r}
+```{r, include=FALSE}
 #| echo: false
 par(mar = c(2, 2, 1, 0.5), pin = c(3, 2))
 bonds %>% 
@@ -82,7 +80,7 @@ The `Credit Rating` is a ordinal categorical variable, and represents the compos
 
 *Figure 1.1, 1.2: Outcome Variables*
 
-```{r}
+```{r, warning=FALSE, message=FALSE}
 #| echo: false
 plot_1 <- ggplot(bonds, aes(x = factor(BB_COMPOSITE), fill = BB_COMPOSITE)) +
   geom_bar() +
@@ -106,7 +104,7 @@ The sentiment score exhibits a notable influence on the behavior of credit sprea
 
 *Figure 2.1, 2.2* , 2.3: Sentiment Score Vs Credit Spread
 
-```{r}
+```{r, warning=FALSE, message=FALSE, fig.width=8, fig.height=3}
 #| echo: false
 # sentiment vs spread colored by sector
 sectors_corr <- c("Technology", "Energy", "Banking", 'Consumer Non-Cyclical', 'Electric', 'Natural Gas')
@@ -148,7 +146,7 @@ grid.arrange(p1, p2, p3,  ncol = 3)
 
 The data in Figure 3.1 suggests that companies with a credit rating of B (including BBB, BB+, etc.) exhibit a considerably broader interquartile range compared to those with an A rating. Additionally, all statistical measures in the box plot for A-rated companies are consistently lower when compared to their B-rated counterparts.*Figure 3.1*: Sentiment Score Vs Credit Ratings
 
-```{r}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.width=8, fig.height=3}
 most_common <- function(column) {
   frequencies <- table(column)
   most_common_category <- names(frequencies)[which.max(frequencies)]
@@ -177,39 +175,9 @@ plot1_capital <- ggplot(bonds, aes(x = marketCapitalization, y = credit_spread, 
 plot1_capital
 ```
 
-Debt and Credit Spread: While credit spread follows the bell-shape of a normal distribution, the density distribution of debt to assets presents multiple peaks and downturns. This suggests that the relationship between debt to assets and credit spread might depend on the industry sector. This seems to be proven true by Figure 2.4 since each sector demonstrates different relationships between the two variables, with some being positive and the other being negative. This could be a potential challenge if we want to incorporate debt to assets into our prediction model. It could impact accuracy and efficiency negatively, as well as creating potential over-fitting. It might be helpful to include an interaction term between debt to assets and sector.
-
-From the density distribution of debt to equity (Figure 2.5), we can see that most data centered around "debt to equity equals 0." This suggests that there are a few outliers with debt smaller than -100 or larger than 150. Removing these outliers might present a better view of the relationship between the two variables. This again raises potential challenge on how to clean the variables and deciding what would be considered as an outlier.
-
-```{r, echo=FALSE}
-library(ggExtra)
-
-plot <- ggplot(bonds, aes(x = debt_to_assets, y = credit_spread)) +
-  geom_point() +
-  theme_minimal() +
-  labs(x = 'Credit to Asset', y = 'Credit Spread (%)', title = 'Figure 2.4: Correlation between debt to assets and credit spread with density distribution')
-plot1_debt <- ggExtra::ggMarginal(plot, type = "histogram")
-
-```
-
-```{r, echo=FALSE}
-plot2 <- ggplot(bonds, aes(x = debt_to_equity, y = credit_spread)) +
-  geom_point() +
-  theme_minimal() +
-  labs(x = 'Credit to Equity', y = 'Credit Spread (%)', title = 'Figure 2.5: Correlation between debt to equity and credit spread with density distribution')
-plot3_debt <- ggExtra::ggMarginal(plot2, type = "histogram")
-
-```
-
-```{r echo=FALSE, fig.width=10, fig.height=3, warning=FALSE, message=FALSE}
-par(mfrow=c(1, 2))
-plot1_debt
-plot3_debt
-```
-
 ## Other Characteristics
 
-OThe dataset encompasses a range of additional fundamental technical indicators, including metrics like Rate of Amortization, EBITDA Margin, Operating Profit Margin, and others. Additionally, it incorporates sentiment score variables, such as the count of positive/negative mentions on Reddit over the past year, and the aggregate positive/negative sentiment scores within the same time frame. A correlation matrix is created to demonstrate the relationship between all numeric fundamentals variables.
+The data set encompasses a range of additional fundamental technical indicators, including metrics like Rate of Amortization, EBITDA Margin, Operating Profit Margin, and others. Additionally, it incorporates sentiment score variables, such as the count of positive/negative mentions on Reddit over the past year, and the aggregate positive/negative sentiment scores within the same time frame. A correlation matrix is created to demonstrate the relationship between all numeric fundamentals variables.
 
 Figure 3.1: Correlation Matrix for All Numeric Variables
 
@@ -231,11 +199,17 @@ corrplot(correlation_matrix, method = "color", addCoef.col = "black", tl.col = "
 #title("Figure 1: Correlation between Numeric Fundamentals", line = 5.1, cex.main=0.8)
 ```
 
+Debt and Credit Spread: While credit spread follows the bell-shape of a normal distribution, the density distribution of debt to assets presents multiple peaks and downturns. This suggests that the relationship between debt to assets and credit spread might depend on the industry sector. This seems to be proven true by Figure 2.4 since each sector demonstrates different relationships between the two variables, with some being positive and the other being negative. This could be a potential challenge if we want to incorporate debt to assets into our prediction model. It could impact accuracy and efficiency negatively, as well as creating potential over-fitting. It might be helpful to include an interaction term between debt to assets and sector.
+
+From the density distribution of debt to equity (Figure 2.5), we can see that most data centered around "debt to equity equals 0." This suggests that there are a few outliers with debt smaller than -100 or larger than 150. Removing these outliers might present a better view of the relationship between the two variables. This again raises potential challenge on how to clean the variables and deciding what would be considered as an outlier.
+
+## 
+
 ## Potential Challenges
 
 *Figure 3.1*: Histogram of Number of Bonds per Ticker
 
-```{r}
+```{r, fig.width=8, fig.height=2, echo=FALSE}
 #| echo: false
 ticker_count <- bonds %>% 
   group_by(ticker) %>% 
