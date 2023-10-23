@@ -1,13 +1,13 @@
 ---
 title: "Group Project: Exploration of Data"
-author: "Kelly Tong, Rakeen, Lisa Wang, Javier Cervantes"
+author: "Kelly Tong, Rakeen Rouf, Lisa Wang, Javier Cervantes"
 format:
   pdf:  
     # Fonts  
     mainfont: Helvetica Neue  
     fontsize: 10pt  
     papersize: A4  
-    margin-top: 25mm  
+    margin-top: 5mm  
     margin-bottom: 25mm  
     margin-left: 25mm  
     margin-right: 25mm  
@@ -16,6 +16,18 @@ editor: visual
 ---
 
 ## Data Overview
+
+The research aims to estimate a company's credit risk using a dataset sourced on *September 22, 2023*. The dataset is a subset of the holdings within an ETF, exclusively representing companies listed in the S&P 500. It comprises **2,341** rows, with each row corresponding to a specific bond issued by an S&P 500 company. Across the dataset, there are **34** variables, which can be grouped into four distinct categories, each originating from different data sources:
+
+1.  **Bond information from iShare (13/34):** Information related to the bonds, including the issuer's name, industry sector, price, duration, yield to maturity, issuer's stock ticker, and market capitalization. Sourced from [the USIG Ishares Credit Bond ETF](https://www.ishares.com/us/products/239460/ishares-credit-bond-etf).
+2.  **Company fundamentals from Yahoo Finance (11/34):** Company fundamentals, including various financial ratios (e.g., revenue, debt). Sourced from [Yahoo Finance](https://finance.yahoo.com/) using the yfinance package.
+3.  **Credit ratings from Bloomberg (4/34):** Credit ratings from Fitch, Moody's, and S&P, and a composite credit rating were sourced from [the Bloomberg Terminal](https://www.bloomberg.com/professional/solution/bloomberg-terminal/).
+4.  **Social sentiment indicators from Finhubb API (6/34):** Social sentiment indicators including the number of positive and negative mentions on Reddit last year Sourced from [the Finhubb API](https://finnhub.io/docs/api/introduction).
+
+Utilizing this dataset, we aim to delve into two key research questions:
+
+1.  Which factors contribute to a bond's credit rating? (Outcome Variable: average_credit_rating)
+2.  Can we predict a certain bond's credit spread based on various metrics like the company's fundamentals and the market's sentiment related to that company? (Outcome Variable: cedit_spread)
 
 ```{r echo=FALSE, results='hide', warning=FALSE, message=FALSE}
 library(corrplot)
@@ -82,7 +94,7 @@ The `Credit Rating` is a ordinal categorical variable, and represents the compos
 
 *Figure 1.1, 1.2: Outcome Variables*
 
-```{r, warning=FALSE, message=FALSE}
+```{r, warning=FALSE, message=FALSE, fig.width=8, fig.height=2}
 #| echo: false
 plot_1 <- ggplot(bonds, aes(x = factor(BB_COMPOSITE), fill = BB_COMPOSITE)) +
   geom_bar() +
@@ -207,13 +219,13 @@ Debt and Credit Spread: While credit spread follows the bell-shape of a normal d
 
 Figure 3.2: Correlation between Credit Spread and Credit to Asset
 
-![](images/credit to asset-01.png){width="381"}
+image
 
 From the density distribution of debt to equity (Figure 3.3), we can see that most data centered around "debt to equity equals 0." This suggests that there are a few outliers with debt smaller than -100 or larger than 150. Removing these outliers might present a better view of the relationship between the two variables. This again raises potential challenge on how to clean the variables and deciding what would be considered as an outlier.
 
 Figure 3.3: Correlation between Credit Spread and Credit to Equity
 
-![](images/credit to equity.png){width="421"}
+image
 
 ## Potential Challenges
 
