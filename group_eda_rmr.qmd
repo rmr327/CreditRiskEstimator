@@ -11,16 +11,14 @@ library(corrplot)
 library(ggplot2)
 library(magrittr)
 library(dplyr)
+library(knitr)
+#library(gtsummary)
+library(gridExtra)
 ```
 
 ```{r}
 #| echo: false
 knitr::opts_chunk$set(message=FALSE, warning=FALSE)
-suppressMessages(library(ggplot2))
-suppressMessages(library(tidyverse))
-suppressMessages(library(knitr))
-suppressMessages(library(gtsummary))
-suppressMessages(library(gridExtra))
 ```
 
 ```{r}
@@ -66,7 +64,7 @@ bonds %>%
   ) %>%
   modify_header(label = "**Predictor / Outcome Variables**") %>%
   modify_caption("Predictor / Outcome Statistics") %>%
-  bold_labels()
+  #bold_labels()
 ```
 
 ## Outcome Variables
