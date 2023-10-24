@@ -6,7 +6,7 @@ format:
     mainfont: Helvetica Neue  
     fontsize: 10pt  
     papersize: A4  
-    margin-top: 5mm  
+    margin-top: 25mm  
     margin-bottom: 25mm  
     margin-left: 25mm  
     margin-right: 25mm  
@@ -28,7 +28,8 @@ The research aims to estimate a company's credit risk using a dataset sourced on
 
 Utilizing this dataset, we aim to delve into two key research questions:
 
-1.  Which factors contribute to a bond's credit rating? (Outcome Variable: average_credit_rating) 2. Can we predict a certain bond's credit spread based on various metrics like the company's fundamentals and the market's sentiment related to that company? (Outcome Variable: cedit_spread)
+1.  Which factors contribute to a bond's credit rating? (Outcome Variable: average_credit_rating)
+2.  Can we predict a certain bond's credit spread based on various metrics like the company's fundamentals and the market's sentiment related to that company? (Outcome Variable: cedit_spread)
 
 ```{r echo=FALSE, results='hide', warning=FALSE, message=FALSE}
 library(corrplot)
@@ -192,6 +193,62 @@ plot1_capital <- ggplot(bonds, aes(x = marketCapitalization, y = credit_spread, 
 plot1_capital
 ```
 
+Duration: Duration in investment quantifies the degree to which a bond's or portfolio's price is affected by shifts in interest rates. The visualizations illustrate that the connection between duration and credit spread is not uniform and fluctuates across sectors. In sectors such as basic industry and energy, the relationship tends to be positive, given the stable cash flows and lower risk profile, which lead to the issuance of longer-duration bonds. Conversely, sectors like technology, characterized by substantial growth potential but less stability, and banking, sensitive to interest rate shifts, exhibit a negative correlation between duration and credit spread.
+
+```{r, include=FALSE}
+#| echo: false
+ggplot(bonds, aes(x = Duration, y = credit_spread, col = Sector)) + 
+  geom_point() + 
+  geom_smooth(method = 'lm', se = F) + 
+  labs(y = 'Credit spread (%)', x = 'Duration')
+
+bonds$Sector_factor <- factor(bonds$Sector)
+mod_duration <- lm(credit_spread~Duration + Sector,
+                   data = bonds)
+summary(mod_duration)
+```
+
+```{r, warning=FALSE, message=FALSE, fig.width=8, fig.height=3}
+#| echo: false
+# sentiment vs spread colored by sector
+sectors_corr <- c( 'Energy','Basic Industry' , 'Brokerage/Asset Managers/Exchanges', 'Transportation','Reits',  'Electric','Consumer Non-Cyclical','Consumer Cyclical','Communications')
+
+sectors_anti_corr <- c('Technology', 'Banking', 'Insurance')
+
+bonds_filtered <- bonds %>%
+  filter(Sector %in% sectors_corr)
+
+bonds_filtered_2 <- bonds %>%
+  filter(!Sector %in% sectors_corr & !Sector %in% sectors_anti_corr)
+
+bonds_filtered_3 <- bonds %>%
+  filter(Sector %in% sectors_anti_corr)
+
+p1 <- ggplot(bonds_filtered, aes(x = Duration, y = credit_spread, col = Sector)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = F) +
+  labs(x= 'Duration', y = 'Credit spread (%)') + 
+  ggtitle("Positive Correlation") +
+  theme(legend.position = "none")
+
+p2 <- ggplot(bonds_filtered_2, aes(x = Duration, y = credit_spread, col = Sector)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = F) +
+  labs(x= 'Duration', y = NULL)  + 
+  ggtitle("Neutral Correlation") +
+  theme(legend.position = "none")
+
+p3 <- ggplot(bonds_filtered_3, aes(x = Duration, y = credit_spread, col = Sector)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = F) +
+  labs(x= 'Duration', y = NULL) + 
+  ggtitle("Negative Correlation") +
+  theme(legend.position = "none")
+
+grid.arrange(p1, p2, p3,  ncol = 3)
+
+```
+
 ## Other Characteristics
 
 The data set encompasses a range of additional fundamental technical indicators, including metrics like Rate of Amortization, EBITDA Margin, Operating Profit Margin, and others. Additionally, it incorporates sentiment score variables, such as the count of positive/negative mentions on Reddit over the past year, and the aggregate positive/negative sentiment scores within the same time frame. A correlation matrix is created to demonstrate the relationship between all numeric fundamentals variables.
@@ -257,6 +314,10 @@ Figure 3.3: Correlation between Credit Spread and Credit to Equity
 ![Credit to Asset](credit_to_asset.png){#fig-asset}
 
 Interest Coverage, Debt Service Coverage, and Cash Coverage provide valuable insights into a company's creditworthiness and financial stability. A stronger financial position, as indicated by higher ratios, tends to correlate with a lower credit risk, potentially leading to narrower credit spreads and more favorable credit ratings. Cash ratio indicates a company's ability to pay off short-term liabilities with its cash and equivalents, while the current ratio measures its overall liquidity. Higher liquidity and solvency, reflected in these ratios, typically indicate lower credit risk, which may lead to narrower credit spreads and higher credit rating scores.
+
+Several columns in the company fundamental data gathered from Yahoo Finance contain missing values (Table 3.1?). These missing values are typically derived from the company's balance sheet. We will conduct further investigation to understand the reasons for the data gaps and undertake efforts to manually calculate and fill in the missing values.
+
+Several variables have been excluded from the statistical model. General bond information, such as the bond's name and unique identifier, will not be included. Additionally, certain variables that exhibit high correlations with each other, like the cash ratio and current ratio, or the count of positive/negative mentions and aggregate mention scores, will have only one representative variable retained in the model. Furthermore, while we gathered credit rating scores from three different institutions (Fitch, Moody's, and S&P), we will utilize the Bloomberg Composite Credit Rating, which is the equally weighted blend of all the scores, as the outcome variable for our analysis.
 
 ## Potential Challenges
 
