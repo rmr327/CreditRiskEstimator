@@ -1,4 +1,2 @@
 # CreditRiskEstimator
-Predicting a bond’s credit spread based on various metrics like the company’s fundamentals and the market’s sentiment related to that company
-
-![Alt text](https://user-images.githubusercontent.com/36940292/277152511-e5bcf779-7c48-408c-b565-7fc2713ad857.png)
+![Alt text](https://user-images.githubusercontent.com/36940292/278848919-9668d3b6-ca57-4fa7-8951-ff0d71c0e00d.png)
