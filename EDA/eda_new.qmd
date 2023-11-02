@@ -28,7 +28,7 @@ The research aims to estimate a company's credit risk using a dataset sourced on
 
 Utilizing this dataset, we aim to delve into two key research questions:
 
-1.  Which factors contribute to a bond's credit rating? (Outcome Variable: average_credit_rating)
+1.  Which factors contribute to a bond's credit rating? (Outcome Variable: BB_COMPOSITE)
 2.  Can we predict a certain bond's credit spread based on various metrics like the company's fundamentals and the market's sentiment related to that company? (Outcome Variable: credit_spread)
 
 ```{r echo=FALSE, results='hide', warning=FALSE, message=FALSE}
@@ -71,7 +71,7 @@ bonds %>%
                 debt_to_assets ~ "continuous",
                 Sector ~ "categorical"),
     label  = list(Duration      ~ "Duration (years)",
-                  roa ~ "Rate of Amortization (%)",
+                  roa ~ "Return on Assets (%)",
                   debt_to_assets ~ "Debt to Asset (ratio)",
                   debt_to_equity ~ "Debt to Equity (ratio)",
                   Sector ~ "Industry Sector", 
@@ -92,7 +92,7 @@ bonds %>%
 
 ## Outcome Variables
 
-The `Credit Rating` is an ordinal categorical variable, and represents the composite credit rating issued to each company by Bloomberg. When we look at the distribution of Credit Ratings in Figure 1.1, we notice that it appears more scattered and less structured compared to the distribution of Credit Spreads in Figure 1.2. To make sense of this, we are considering combining certain categories of Credit Ratings. This could potentially help to reduce the variability and make the data clearer. We will discuss this further in the potential problem section. It's worth noting that the 'BBB' category has a much larger number of observations in the data set compared to other categories. This makes it a significant portion (30.5%) of the data.
+The `Credit Rating` is an ordinal categorical variable, and represents an equally weighted blend of the ratings of a security by Moody\'s, S&P, Fitch, and DBRS as published by Bloomberg. When we look at the distribution of Credit Ratings in Figure 1.1, we notice that it appears more scattered and less structured compared to the distribution of Credit Spreads in Figure 1.2. To make sense of this, we are considering combining certain categories of Credit Ratings. This could potentially help to reduce the variability and make the data clearer. We will discuss this further in the potential problem section. It's worth noting that the 'BBB' category has a much larger number of observations in the data set compared to other categories. This makes it a significant portion (30.5%) of the data.
 
 The `Credit Spread` is a continuous outcome variable and represents the difference in yield or interest rate between a particular bond and a benchmark bond with similar characteristics but considered to be risk-free. For example, if a corporate bond yields 5% and a comparable risk-free government bond yields 3%, then the credit spread of the corporate bond is 2%. The distribution of credit risk in the dataset with respect to the Figure 1.2 below, appears to follow a normal distribution with a high positive skew. The mean Standard Deviation and Median of Credit Spread are as follows: 0.47, 0.49, 0.44.
 
@@ -102,6 +102,7 @@ Figure 1.1, 1.2: Outcome Variables
 
 ```{r, warning=FALSE, message=FALSE, fig.width=9, fig.height=3}
 #| echo: false
+bonds$BB_COMPOSITE <- factor(bonds$BB_COMPOSITE, levels = c('AAA', 'AA+', 'AA', 'AA-', 'A+', 'A', 'A-', 'BBB+', 'BBB', 'BBB-', 'BB+'))
 plot_1 <- ggplot(bonds, aes(x = factor(BB_COMPOSITE), fill = BB_COMPOSITE)) +
   geom_bar() +
   labs(x = "Bloomberg Composite Credit Rating", y = "Frequency", title = "Histogram of Credit Rating") +
@@ -164,7 +165,7 @@ p3 <- ggplot(bonds_filtered_3, aes(x = score, y = credit_spread, col = Sector)) 
 grid.arrange(p1, p2, p3,  ncol = 3)
 ```
 
-The data in Figure 2.4 suggests that companies with a credit rating of B (including BBB, BB+, etc.) exhibit a considerably broader interquartile range compared to those with an A rating. Additionally, all statistical measures in the box plot for A-rated companies are consistently lower when compared to their B-rated counterparts.
+The data in Figure 2.4 suggests that companies with a credit rating below A- (including BBB, BB+, etc.) exhibit a considerably broader interquartile range compared to those with an A rating. Additionally, all statistical measures in the box plot for A-rated companies are consistently lower when compared to their B-rated counterparts.
 
 Figure 2.4: Sentiment Score Vs Credit Ratings
 
@@ -179,9 +180,14 @@ bonds_agg <- bonds %>%
   group_by(ticker) %>%
   summarise(mean_value = mean(score), most_freq = most_common(BB_COMPOSITE))
 
+bonds_agg$most_freq <- factor(
+  bonds_agg$most_freq, 
+  levels = c('AAA', 'AA+', 'AA', 'AA-', 'A+', 'A', 'A-', 'BBB+', 'BBB', 'BBB-', 'BB+')
+)
+
 ggplot(bonds_agg, aes(x = most_freq, y = mean_value)) +
   geom_boxplot() +
-  labs(x = "BloomBerg Credit Ratings", y = "Sentiment Score") +
+  labs(x = "Bloomberg Credit Ratings", y = "Sentiment Score") +
   theme_minimal()
 ```
 
@@ -190,26 +196,26 @@ ggplot(bonds_agg, aes(x = most_freq, y = mean_value)) +
 Figure 2.5: Correlation between Market Capitalization and Credit Spread
 
 ```{r, echo=FALSE, fig.width=8, fig.height=2.6}
-plot1_capital <- ggplot(bonds, aes(x = marketCapitalization, y = credit_spread, col = Sector)) +
+plot1_capital <- ggplot(bonds, aes(x = log(marketCapitalization), y = credit_spread, col = Sector)) +
   geom_point() +
   geom_smooth(method = 'lm', se = F) +
   labs(x= 'Market Capitalization (in million dollars)', y = 'Credit spread (%)')
 plot1_capital
 ```
 
-`Duration:` Duration in investment quantifies the degree to which a bond's or portfolio's price is affected by shifts in interest rates. The visualizations illustrate that the connection between duration and credit spread is not uniform and fluctuates across sectors. In sectors such as basic industry and energy, the relationship tends to be positive, given the stable cash flows and lower risk profile, which lead to the issuance of longer-duration bonds. Conversely, sectors like technology, characterized by substantial growth potential but less stability, and banking, sensitive to interest rate shifts, exhibit a negative correlation between duration and credit spread.
+`Duration:` Duration in fixed income securities represents the impact that a change in interest rates has on the price of that security. Therefore, it's intuitive to see that, as Duration increases, a bond's credit spread increases as well as there is more risk involved.
 
-```{r, include=FALSE}
+```{r, echo=FALSE, fig.width=8, fig.height=4}
 #| echo: false
-ggplot(bonds, aes(x = Duration, y = credit_spread, col = Sector)) + 
+ggplot(bonds, aes(x = Duration, y = credit_spread, col = BB_COMPOSITE)) + 
   geom_point() + 
   geom_smooth(method = 'lm', se = F) + 
-  labs(y = 'Credit spread (%)', x = 'Duration')
+  labs(y = 'Credit spread (%)', x = 'Duration', col = 'Credit Rating')
 
 bonds$Sector_factor <- factor(bonds$Sector)
-mod_duration <- lm(credit_spread~Duration + Sector,
+ mod_duration <- lm(credit_spread~Duration + Sector,
                    data = bonds)
-summary(mod_duration)
+# summary(mod_duration)
 ```
 
 Figure 2.6, 2.7 , 2.8: Duration Vs Credit Spread
@@ -258,6 +264,33 @@ grid.arrange(p1, p2, p3,  ncol = 3)
 ```
 
 </div>
+
+```{r, warning=FALSE, message=FALSE, fig.width=15, fig.height=4.5}
+#| echo: false
+# alternative explanation for credit_spread vs Duration
+p1 <- ggplot(bonds_filtered, aes(x = Duration, y = credit_spread, col = BB_COMPOSITE)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = F) +
+  labs(x= 'Duration', y = 'Credit spread (%)') + 
+  ggtitle("Positive Correlation") #+
+  #theme(legend.position = "none")
+
+p2 <- ggplot(bonds_filtered_2, aes(x = Duration, y = credit_spread, col = BB_COMPOSITE)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = F) +
+  labs(x= 'Duration', y = NULL)  + 
+  ggtitle("Neutral Correlation") #+
+  #theme(legend.position = "none")
+
+p3 <- ggplot(bonds_filtered_3, aes(x = Duration, y = credit_spread, col = BB_COMPOSITE)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = F) +
+  labs(x= 'Duration', y = NULL) + 
+  ggtitle("Negative Correlation") #+
+  #theme(legend.position = "none")
+
+grid.arrange(p1, p2, p3,  ncol = 3)
+```
 
 ## Other Characteristics
 
