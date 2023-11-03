@@ -92,7 +92,7 @@ bonds %>%
 
 ## Outcome Variables
 
-The `Credit Rating` is an ordinal categorical variable, and represents an equally weighted blend of the ratings of a security by Moody\'s, S&P, Fitch, and DBRS as published by Bloomberg. When we look at the distribution of Credit Ratings in Figure 1.1, we notice that it appears more scattered and less structured compared to the distribution of Credit Spreads in Figure 1.2. To make sense of this, we are considering combining certain categories of Credit Ratings. This could potentially help to reduce the variability and make the data clearer. We will discuss this further in the potential problem section. It's worth noting that the 'BBB' category has a much larger number of observations in the data set compared to other categories. This makes it a significant portion (30.5%) of the data.
+The `Credit Rating` is an ordinal categorical variable, and represents an equally weighted blend of the ratings of a security by Moody's, S&P, Fitch, and DBRS as published by Bloomberg. When we look at the distribution of Credit Ratings in Figure 1.1, we notice that it appears more scattered and less structured compared to the distribution of Credit Spreads in Figure 1.2. To make sense of this, we are considering combining certain categories of Credit Ratings. This could potentially help to reduce the variability and make the data clearer. We will discuss this further in the potential problem section. It's worth noting that the 'BBB' category has a much larger number of observations in the data set compared to other categories. This makes it a significant portion (30.5%) of the data.
 
 The `Credit Spread` is a continuous outcome variable and represents the difference in yield or interest rate between a particular bond and a benchmark bond with similar characteristics but considered to be risk-free. For example, if a corporate bond yields 5% and a comparable risk-free government bond yields 3%, then the credit spread of the corporate bond is 2%. The distribution of credit risk in the dataset with respect to the Figure 1.2 below, appears to follow a normal distribution with a high positive skew. The mean Standard Deviation and Median of Credit Spread are as follows: 0.47, 0.49, 0.44.
 
@@ -203,7 +203,7 @@ plot1_capital <- ggplot(bonds, aes(x = log(marketCapitalization), y = credit_spr
 plot1_capital
 ```
 
-`Duration:` Duration in fixed income securities represents the impact that a change in interest rates has on the price of that security. Therefore, it's intuitive to see that, as Duration increases, a bond's credit spread increases as well as there is more risk involved.
+`Duration:` Duration in fixed income securities represents the impact that a change in interest rates has on the price of that security. Therefore, it's intuitive to see that, as Duration increases, a bond's credit spread increases as well because there is more risk involved.
 
 ```{r, echo=FALSE, fig.width=8, fig.height=4}
 #| echo: false
@@ -219,78 +219,6 @@ bonds$Sector_factor <- factor(bonds$Sector)
 ```
 
 Figure 2.6, 2.7 , 2.8: Duration Vs Credit Spread
-
-<div>
-
-```{r, warning=FALSE, message=FALSE, fig.width=15, fig.height=4.5}
-#| echo: false
-# sentiment vs spread colored by sector
-sectors_corr <- c( 'Energy','Basic Industry' , 'Brokerage/Asset Managers/Exchanges', 'Transportation','Reits',  'Electric','Consumer Non-Cyclical','Consumer Cyclical','Communications')
-
-sectors_anti_corr <- c('Technology', 'Banking', 'Insurance')
-
-bonds_filtered <- bonds %>%
-  filter(Sector %in% sectors_corr)
-
-bonds_filtered_2 <- bonds %>%
-  filter(!Sector %in% sectors_corr & !Sector %in% sectors_anti_corr)
-
-bonds_filtered_3 <- bonds %>%
-  filter(Sector %in% sectors_anti_corr)
-
-p1 <- ggplot(bonds_filtered, aes(x = Duration, y = credit_spread, col = Sector)) +
-  geom_point() +
-  geom_smooth(method = 'lm', se = F) +
-  labs(x= 'Duration', y = 'Credit spread (%)') + 
-  ggtitle("Positive Correlation") #+
-  #theme(legend.position = "none")
-
-p2 <- ggplot(bonds_filtered_2, aes(x = Duration, y = credit_spread, col = Sector)) +
-  geom_point() +
-  geom_smooth(method = 'lm', se = F) +
-  labs(x= 'Duration', y = NULL)  + 
-  ggtitle("Neutral Correlation") #+
-  #theme(legend.position = "none")
-
-p3 <- ggplot(bonds_filtered_3, aes(x = Duration, y = credit_spread, col = Sector)) +
-  geom_point() +
-  geom_smooth(method = 'lm', se = F) +
-  labs(x= 'Duration', y = NULL) + 
-  ggtitle("Negative Correlation") #+
-  #theme(legend.position = "none")
-
-grid.arrange(p1, p2, p3,  ncol = 3)
-
-```
-
-</div>
-
-```{r, warning=FALSE, message=FALSE, fig.width=15, fig.height=4.5}
-#| echo: false
-# alternative explanation for credit_spread vs Duration
-p1 <- ggplot(bonds_filtered, aes(x = Duration, y = credit_spread, col = BB_COMPOSITE)) +
-  geom_point() +
-  geom_smooth(method = 'lm', se = F) +
-  labs(x= 'Duration', y = 'Credit spread (%)') + 
-  ggtitle("Positive Correlation") #+
-  #theme(legend.position = "none")
-
-p2 <- ggplot(bonds_filtered_2, aes(x = Duration, y = credit_spread, col = BB_COMPOSITE)) +
-  geom_point() +
-  geom_smooth(method = 'lm', se = F) +
-  labs(x= 'Duration', y = NULL)  + 
-  ggtitle("Neutral Correlation") #+
-  #theme(legend.position = "none")
-
-p3 <- ggplot(bonds_filtered_3, aes(x = Duration, y = credit_spread, col = BB_COMPOSITE)) +
-  geom_point() +
-  geom_smooth(method = 'lm', se = F) +
-  labs(x= 'Duration', y = NULL) + 
-  ggtitle("Negative Correlation") #+
-  #theme(legend.position = "none")
-
-grid.arrange(p1, p2, p3,  ncol = 3)
-```
 
 ## Other Characteristics
 
