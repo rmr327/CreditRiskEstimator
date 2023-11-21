@@ -23,7 +23,7 @@ library(ggplot2)
 full model:
 
 ```{r}
-credit_spread_mod <- lm(credit_spread ~ Sector + Duration + ticker + marketCapitalization + score + BB_COMPOSITE + debt_to_assets + debt_to_equity + int_coverage + cash_coverage + current_ratio + cash_ratio + roa + ebitda_margin, data=credit_risk_data)
+credit_spread_mod <- lm(credit_spread ~ Sector + Duration + marketCapitalization + score + BB_COMPOSITE + debt_to_assets + debt_to_equity + int_coverage + cash_coverage + current_ratio + cash_ratio + roa + ebitda_margin + debt_service_coverage + score * Sector + debt_to_assets * Sector, data=credit_risk_data)
 summary(credit_spread_mod)
 ```
 
@@ -116,7 +116,11 @@ summary(credit_spread_rfe2)
 Modeling the prediction model with only the top 5 relevant predictors to credit spread demonstrates negative relationship between ROA and positive score with credit spread. On the other hand, ebitda margin, debt to assets and operating profit margin demonstrates positive relationship. Among these predictors, ROA, debt to assets, operating profit margin and positive score are statistically significant as they all ave very small p values (p values less than 0.001). However, R-squared value is approximately 0.2 which only indicates about 20.32% of the variability in predictor explained by the model. We can combine the top 5 relevant predictor with the full model to experiment a potential improvement of the model.
 
 ```{r}
-credit_spread_com <- lm(credit_spread ~ Duration + marketCapitalization + BB_COMPOSITE + roa + ebitda_margin + debt_to_assets + operating_profit_margin + score , data=credit_risk_data)
+credit_risk_data$BB_COMPOSITE <- factor(credit_risk_data$BB_COMPOSITE, levels = c('AAA', 'AA+', 'AA', 'AA-', 'A+', 'A', 'A-', 'BBB+', 'BBB', 'BBB-', 'BB+'))
+```
+
+```{r}
+credit_spread_com <- lm(credit_spread ~ Duration + marketCapitalization + BB_COMPOSITE + roa + ebitda_margin + debt_to_assets + operating_profit_margin + score + debt_service_coverage + score * Sector + debt_to_assets * Sector, data=credit_risk_data)
 summary(credit_spread_com)
 ```
 
