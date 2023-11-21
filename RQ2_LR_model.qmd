@@ -125,3 +125,31 @@ summary(credit_spread_com)
 ```
 
 This has caused R-squared to improve. However, many predictors have become statistically insignificant. Combining BB_COMPOSITE categories might help.
+
+Influential Points / Cook's distance
+
+```{r}
+h <- hatvalues(credit_spread_com)
+residuals_sq <- residuals(credit_spread_com, type = "pearson")^2
+cooksd <- residuals_sq * h / (df.residual(credit_spread_com) * (1 - h))
+head(cooksd)
+```
+
+```{r}
+#cook's distance
+plot(cooksd, type="h", main="Cook's Distance", ylab="Cook's Distance", xlab="Observation Number")
+abline(h = 4*mean(cooksd, na.rm=T), col="red")  # threshold line
+max_cooks <- max(cooksd, na.rm = TRUE)
+threshold <- 4 * mean(cooksd, na.rm = TRUE)
+
+#cat("Maximum Cook's Distance:", max_cooks, "\n")
+#cat("Threshold Value:", threshold, "\n")
+#infinite_indices <- which(is.infinite(cooksd_logistic))
+#print(infinite_indices)
+#finance[infinite_indices, ]
+n <- length(cooksd)
+threshold <- 4/n
+
+influential_points <- which(cooksd > threshold)
+print(influential_points)
+```
