@@ -1,0 +1,52 @@
+---
+title: "ordinal_regression"
+author: "Raks"
+format: pdf
+editor: visual
+---
+
+## Quarto
+
+Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
+
+## Running Code
+
+When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
+
+```{r}
+bonds <- read.csv("credit_risk_data.csv")
+# Transform the 'bonds' column into an ordered factor
+bonds$BB_COMPOSITE <- ordered(bonds$BB_COMPOSITE, levels = c("AAA", "AA+", "AA", "AA-", "A+", "A", "A-", "BBB+", "BBB", "BBB-", "BB+"))
+```
+
+You can add options to executable code like this
+
+```{r, ignore = FALSE}
+#| echo: false
+library(MASS)
+library(tidyverse)
+```
+
+The `echo: false` option disables the printing of code (only output is displayed).
+
+```{r}
+ord_mod <- polr(BB_COMPOSITE ~ score + Duration + credit_spread + debt_to_assets + , data=bonds, Hess=TRUE)
+summary(ord_mod)
+```
+
+```{r}
+pvals <- pnorm(-abs(summary(ord_mod)$coef[,"t value"]))*2
+ctable <- cbind(summary(ord_mod)$coef,pvals)
+
+ctable
+```
+
+```{r}
+exp_coefs <- exp(cbind(OR=coef(ord_mod),confint(ord_mod)))
+print(exp_coefs)
+```
+
+```{r}
+library("car")
+vif(ord_mod)
+```
