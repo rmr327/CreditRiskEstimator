@@ -1,0 +1,155 @@
+---
+title: "RQ2_LR_model"
+author: "Kelly"
+format: pdf
+editor: visual
+---
+
+## Research Question 2						
+
+Can we predict a certain bond\'s credit spread based on a company\'s fundamentals and the
+market\'s sentiment related to that company? (Outcome Variable: credit_spread)
+
+```{r}
+credit_risk_data <- read.csv("credit_risk_data.csv")
+```
+
+```{r}
+library(dplyr)
+library(caret)
+library(ggplot2)
+```
+
+full model:
+
+```{r}
+credit_spread_mod <- lm(credit_spread ~ Sector + Duration + marketCapitalization + score + BB_COMPOSITE + debt_to_assets + debt_to_equity + int_coverage + cash_coverage + current_ratio + cash_ratio + roa + ebitda_margin + debt_service_coverage + score * Sector + debt_to_assets * Sector, data=credit_risk_data)
+summary(credit_spread_mod)
+```
+
+excluding ticker, interest coverage, current ratio, cash ratio (too many NAs):
+
+```{r}
+credit_spread_mod2 <- lm(credit_spread ~ Sector + Duration + marketCapitalization + score + BB_COMPOSITE + debt_to_assets + debt_to_equity + cash_coverage + roa + ebitda_margin, data=credit_risk_data)
+summary(credit_spread_mod2)
+```
+
+Variable Selection: RFE
+
+```{r}
+#RFE to select top variables correlated with price
+# Select numeric columns only
+numeric_data <- credit_risk_data %>%
+  select_if(is.numeric)
+head(numeric_data)
+# Specify the outcome and predictor variables
+outcome <- "credit_spread"
+#avoid varibales with high collinearity
+exclude_columns <- c("credit_spread")
+predictors <- setdiff(names(numeric_data), exclude_columns)  # All numeric columns except for the outcome
+
+# Define the control using a linear model (lm), a 10-fold CV, and using the RMSE to choose the best model
+ctrl <- rfeControl(functions=lmFuncs, method="cv", number=10)
+
+# Use RFE on the numeric data
+results <- rfe(numeric_data[, predictors], numeric_data[, outcome], sizes=c(1:length(predictors)), rfeControl=ctrl)
+
+# Print results
+print(results)
+```
+
+only the top 3 variables from RFE output:
+
+```{r}
+credit_spread_modrfe <- lm(credit_spread ~ YTM.... + roa + ebitda_margin, data=credit_risk_data)
+summary(credit_spread_modrfe)
+```
+
+From the result, we found that "YTM..." fits the model perfectly, suggesting correlation between YTM and credit spread. The following calculated correlation coefficient and plot demonstrates a correlation of 1 between the two variable, meaning that they have perfect linearity and that one variable can perfectly predicts the other. This is the reason why R-squared always equal 1 when YTM.... is included.
+
+```{r}
+# Calculate the correlation
+correlation <- cor(credit_risk_data$YTM, credit_risk_data$credit_spread)
+print(paste("Correlation coefficient: ", correlation))
+
+# Plot using ggplot2
+ggplot(credit_risk_data, aes(x = YTM...., y = credit_spread)) +
+  geom_point() +
+  geom_smooth(method = "lm", color = "blue") +
+  theme_minimal() +
+  labs(title = "Scatter Plot of YTM vs. Credit Spread",
+       subtitle = paste("Correlation: ", round(correlation, 2)),
+       x = "Yield to Maturity (YTM)",
+       y = "Credit Spread")
+```
+
+```{r}
+#RFE to select top variables correlated with price
+# Select numeric columns only
+numeric_data <- credit_risk_data %>%
+  select_if(is.numeric)
+head(numeric_data)
+# Specify the outcome and predictor variables
+outcome <- "credit_spread"
+#avoid varibales with high collinearity
+exclude_columns <- c("credit_spread", "YTM....")
+predictors <- setdiff(names(numeric_data), exclude_columns)  # All numeric columns except for the outcome
+
+# Define the control using a linear model (lm), a 10-fold CV, and using the RMSE to choose the best model
+ctrl <- rfeControl(functions=lmFuncs, method="cv", number=10)
+
+maxVariablesToConsider <- min(10, length(predictors)) # Ensure we don't exceed the total number of available predictors
+results <- rfe(numeric_data[, predictors], numeric_data[, outcome], 
+               sizes=seq(1, maxVariablesToConsider), rfeControl=ctrl)
+
+# Print results
+print(results)
+```
+
+```{r}
+## top 5 influential variables for credit spread as calculated by RFE
+
+credit_spread_rfe2 <- lm(credit_spread ~ roa + ebitda_margin + debt_to_assets + operating_profit_margin + positiveScore, data=credit_risk_data)
+summary(credit_spread_rfe2)
+```
+
+Modeling the prediction model with only the top 5 relevant predictors to credit spread demonstrates negative relationship between ROA and positive score with credit spread. On the other hand, ebitda margin, debt to assets and operating profit margin demonstrates positive relationship. Among these predictors, ROA, debt to assets, operating profit margin and positive score are statistically significant as they all ave very small p values (p values less than 0.001). However, R-squared value is approximately 0.2 which only indicates about 20.32% of the variability in predictor explained by the model. We can combine the top 5 relevant predictor with the full model to experiment a potential improvement of the model.
+
+```{r}
+credit_risk_data$BB_COMPOSITE <- factor(credit_risk_data$BB_COMPOSITE, levels = c('AAA', 'AA+', 'AA', 'AA-', 'A+', 'A', 'A-', 'BBB+', 'BBB', 'BBB-', 'BB+'))
+```
+
+```{r}
+credit_spread_com <- lm(credit_spread ~ Duration + marketCapitalization + BB_COMPOSITE + roa + ebitda_margin + debt_to_assets + operating_profit_margin + score + debt_service_coverage + score * Sector + debt_to_assets * Sector, data=credit_risk_data)
+summary(credit_spread_com)
+```
+
+This has caused R-squared to improve. However, many predictors have become statistically insignificant. Combining BB_COMPOSITE categories might help.
+
+Influential Points / Cook's distance
+
+```{r}
+h <- hatvalues(credit_spread_com)
+residuals_sq <- residuals(credit_spread_com, type = "pearson")^2
+cooksd <- residuals_sq * h / (df.residual(credit_spread_com) * (1 - h))
+head(cooksd)
+```
+
+```{r}
+#cook's distance
+plot(cooksd, type="h", main="Cook's Distance", ylab="Cook's Distance", xlab="Observation Number")
+abline(h = 4*mean(cooksd, na.rm=T), col="red")  # threshold line
+max_cooks <- max(cooksd, na.rm = TRUE)
+threshold <- 4 * mean(cooksd, na.rm = TRUE)
+
+#cat("Maximum Cook's Distance:", max_cooks, "\n")
+#cat("Threshold Value:", threshold, "\n")
+#infinite_indices <- which(is.infinite(cooksd_logistic))
+#print(infinite_indices)
+#finance[infinite_indices, ]
+n <- length(cooksd)
+threshold <- 4/n
+
+influential_points <- which(cooksd > threshold)
+print(influential_points)
+```
