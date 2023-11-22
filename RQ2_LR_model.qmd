@@ -5,10 +5,9 @@ format: pdf
 editor: visual
 ---
 
-## Research Question 2						
+## Research Question 2
 
-Can we predict a certain bond\'s credit spread based on a company\'s fundamentals and the
-market\'s sentiment related to that company? (Outcome Variable: credit_spread)
+Can we predict a certain bond's credit spread based on a company's fundamentals and the market's sentiment related to that company? (Outcome Variable: credit_spread)
 
 ```{r}
 credit_risk_data <- read.csv("credit_risk_data.csv")
@@ -127,6 +126,19 @@ summary(credit_spread_com)
 This has caused R-squared to improve. However, many predictors have become statistically insignificant. Combining BB_COMPOSITE categories might help.
 
 Influential Points / Cook's distance
+
+### Diagnostic plots
+
+-   linearity assumption ok
+
+-   normality of errors: not so nice around the tails but not too relevant
+
+-   influential points: Cook's distance ok =\> no influential points
+
+```{r}
+# residual plots & cook's distance
+plot(credit_spread_com)
+```
 
 ```{r}
 h <- hatvalues(credit_spread_com)
