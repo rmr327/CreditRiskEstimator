@@ -1,0 +1,88 @@
+---
+title: "NAs_influential_points"
+author: "Javier"
+format: pdf
+editor: visual
+---
+
+## Handling NAs
+
+```{r}
+suppressMessages(library(tidyverse))
+bonds <- read.csv('credit_risk_data.csv')
+```
+
+Given the different accounting practices of the different kinds of businesses in each of the Sectors in our universe, there are bound to be many (often very concentrated) NAs.
+
+### Coverage ratios:
+
+The interest coverage ratio predictor has NAs for the entire Banking Sector. Since interest is a form of revenue for a bank (instead of an expense for other kinds of businesses), the Interest Expense accounting entry results in NA for Banking.
+
+```{r}
+# int_coverage
+int_coverage_nas <- bonds[is.na(bonds$int_coverage),] %>% count(Sector)
+int_coverage_nas <- merge(int_coverage_nas, bonds %>% count(Sector), by = "Sector")
+colnames(int_coverage_nas) <- c('Sector', 'NA_count', 'total_count')
+print(int_coverage_nas)
+```
+
+Similar to what we observed in the interest coverage ratio, the following *debt service coverage* and *cash coverage* ratios both use the Interest Expense accounting entry to calculate the ratios. Banking will not show NA in these because the denominator of each ratio calculation contains another non-NA accounting entry but it will still skew the results significantly for other Sectors.
+
+**We're considering the following options:**
+
+1\) keep interest coverage ratio which results in NA for the entire Banking Sector and remove the other two because they are skewed. If we use Sector and Interest Coverage ratio as an interaction term, [will the model be able to capture the significance of this ratio for other sectors without affecting its performance?]{.underline}
+
+2\) removing all three coverage ratios as predictors. This might result in significant predictors not being captured by the model for sectors other than Banking.
+
+```{r}
+# debt_service_coverage
+debt_coverage_nas <- bonds[is.na(bonds$debt_service_coverage),] %>% count(Sector)
+debt_coverage_nas <- merge(debt_coverage_nas, bonds %>% count(Sector), by = "Sector")
+colnames(debt_coverage_nas) <- c('Sector', 'NA_count', 'total_count')
+print(debt_coverage_nas)
+```
+
+```{r}
+# cash_coverage
+cash_coverage_nas <- bonds[is.na(bonds$cash_coverage),] %>% count(Sector)
+cash_coverage_nas <- merge(cash_coverage_nas, bonds %>% count(Sector), by = "Sector")
+colnames(cash_coverage_nas) <- c('Sector', 'NA_count', 'total_count')
+print(cash_coverage_nas)
+
+```
+
+### Liquidity ratios
+
+Liquidity ratios will also present some issues for the Banking sector. Liquidity risk for banking is the risk that a bank cannot meet its cash obligations due to a sudden loss of funding or a surge of withdrawals. For other sectors, mostly, liquidity risk comes from not being able to meet their short term obligations because of low sales or rising costs.
+
+As we can see from the following tables, Quick ratio has too many NAs and will be removed.
+
+We are left with the current ratio and the cash ratio. Both of them have NA for the entire Banking sector and most of the Insurance sector. We're then left with the same options that we faced with the coverage ratios:
+
+1\) keep current ratio and hope that adding an interaction term of Sector and Current ratio will capture the desired effect on our outcome
+
+2\) remove the liquidity ratios altogether
+
+```{r}
+# curent_ratio
+current_ratio_nas <- bonds[is.na(bonds$current_ratio),] %>% count(Sector)
+current_ratio_nas <- merge(current_ratio_nas, bonds %>% count(Sector), by = "Sector")
+colnames(current_ratio_nas) <- c('Sector', 'NA_count', 'total_count')
+print(current_ratio_nas)
+```
+
+```{r}
+# cash_ratio
+cash_ratio_nas <- bonds[is.na(bonds$cash_ratio),] %>% count(Sector)
+cash_ratio_nas <- merge(cash_ratio_nas, bonds %>% count(Sector), by = "Sector")
+colnames(cash_ratio_nas) <- c('Sector', 'NA_count', 'total_count')
+print(cash_ratio_nas)
+```
+
+```{r}
+# quick ratio
+quick_ratio_nas <- bonds[is.na(bonds$quick_ratio),] %>% count(Sector)
+quick_ratio_nas <- merge(quick_ratio_nas, bonds %>% count(Sector), by = "Sector")
+colnames(quick_ratio_nas) <- c('Sector', 'NA_count', 'total_count')
+print(quick_ratio_nas)
+```
