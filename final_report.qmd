@@ -1,0 +1,278 @@
+---
+title: "Unraveling Credit Risk: Inference and Prediction Models for S&P 500 Bonds"
+author: "Kelly Tong, Rakeen Rouf, Lisa Wang, Javier Cervantes"
+date: 11/28/2023
+abstract: This analysis delves into crucial dimensions of credit risk using a dataset gathered on September 22, 2023. Focused on bonds issued exclusively by S&P 500-listed companies, the dataset encompasses vital information, including bond details, company fundamentals, credit ratings, and social sentiment indicators. The research tackles two pivotal questions -- the determinants of a bond's credit rating and the predictability of credit spreads. Leveraging ordinal regression and linear regression models, the study reveals insights into credit risk assessment and introduces a model with 67% RMSE in predicting credit spreads. This comprehensive exploration provides valuable implications for investors and financial analysts navigating the intricacies of credit risk within the dynamic financial landscape.
+format:
+  pdf:  
+    mainfont: Helvetica Neue  
+    fontsize: 10pt
+    papersize: A4
+    margin-top: 20mm
+    margin-bottom: 20mm  
+    margin-left: 20mm
+    margin-right: 20mm
+    number-sections: true
+    number-offset: 3
+execute:
+  echo: false
+  warning: false
+editor: visual
+---
+
+# Introduction
+
+In the complex landscape of finance, the management and assessment of credit risk play pivotal roles in shaping investment strategies and influencing market dynamics. The finance problem at the heart of this research revolves around the need for a deeper understanding of credit risk within the context of bonds issued by companies listed in the S&P 500. As investors seek avenues to optimize their portfolios and financial institutions strive for effective risk management, the questions of what factors contribute to a bond's credit rating and how credit spreads can be predicted become paramount. In an ever-evolving financial environment, where market conditions and sentiment can swiftly impact investment outcomes, addressing these questions is not merely an academic pursuit but a practical necessity. The outcomes of this analysis hold the potential to refine credit risk assessment methodologies, offering tangible benefits for investors, financial analysts, and the broader financial ecosystem.
+
+## Data Overview
+
+The dataset we used to analyze the research problem is a subset of the holdings within an ETF, exclusively representing companies listed in the S&P 500. It comprises **2,341** rows, with each row corresponding to a specific bond issued by an S&P 500 company. Across the dataset, there are **34** variables, which can be grouped into four distinct categories:
+
+1.  **Bond information from iShare:** Information related to the bonds, including the issuer's name, industry sector, price, duration, yield to maturity, issuer's stock ticker, and market capitalization. Sourced from the USIG Ishares Credit Bond ETF[^1]
+
+2.  **Company fundamentals from Yahoo Finance:** Company fundamentals, including various financial ratios (e.g., revenue, debt). Sourced from Yahoo Finance[^2] using the yfinance package[^3].
+
+3.  **Credit ratings from Bloomberg:** Credit ratings from Fitch, Moody's, and S&P, and a composite credit rating. Sourced from the Bloomberg Terminal[^4]
+
+4.  **Social sentiment indicators from Finhubb API:** Social sentiment indicators including the number of positive and negative mentions on Reddit last year. Sourced from the Finnhub API[^5]
+
+[^1]: iShares by BlackRock. (2023). Retrieved from https://www.ishares.com/us
+
+[^2]: iShares by BlackRock. (2023). Retrieved from https://www.ishares.com/us
+
+[^3]: Yahoo! Finance. (2023). Company profiles, income statements, balance sheets, and event/announcement details for various companies. Retrieved from http://finance.yahoo.com/
+
+[^4]: Bloomberg L.P. (2023). Retrieved from Bloomberg terminal https://www.bloomberg.com/professional/solution/bloomberg-terminal/
+
+[^5]: Finnhub API. (Version 1.0.0). (2023). Retrieved from https://finnhub.io/docs/api/introduction
+
+\newpage
+
+# Methods
+
+## Exploratory Data Analysis (EDA) and Data Manipulation
+
+After conducting an exploratory data analysis (EDA) on our original dataset (please refer to our EDA for reference), we have identified several issues that require attention. Our aim is to address these issues to obtain a cleaner dataset.
+
+### Missing Values
+
+One notable concern is the presence of missing values, particularly in the company fundamental variables. We will thoroughly investigate the reasons behind these missing values and determine whether to drop them or employ methods such as interpolation to fill the gaps.
+
+```{r}
+library(dplyr)
+library(caret)
+library(ggplot2)
+```
+
+### Colinearity
+
+The correlation plot reveals high colinearity between company fundamental variables and sentiment variables. To mitigate this, we will perform a Variance Inflation Factor (VIF) analysis on the columns. This analysis will assist in selecting only one variable when multiple variables represent similar results, reducing redundancy.
+
+### Outliers
+
+The dataset may contain outliers that could significantly influence our results. We plan to conduct an influential point analysis to identify these observations and assess their impact on our analysis.
+
+### Credit Ratings Categories
+
+There is a multitude of categories in credit ratings, with some having minimal data. This situation could lead to high standard errors and adversely affect the quality of our data. Our strategy is to combine categories with limited data into broader categories, addressing the potential issues related to low data volume.
+
+By addressing these concerns through careful data manipulation, we aim to enhance the quality and reliability of our dataset for subsequent analyses.
+
+## Model Fit
+
+For each of the two research question, we are going to fit three models and compare the differences between them to better understand the problem. The first model will be a full model with all the variable we selected. The second model will limited to less variables. The third model will also include a interaction term.
+
+### Variable Selection
+
+Talk about how we select the models
+
+## Model Assessment
+
+### Model Assumptions
+
+check assumptions for the two models.
+
+### Ordinal Credit Score Model Perfomance
+
+In our pursuit of building an ordinal model to infer credit scores, we have fitted three distinct models. To gauge their performance, we employ the Akaike Information Criterion (AIC) score for comparison. Additionally, we assess the model on the training dataset by generating a confusion matrix. This analysis provides insights into how well our model aligns with the actual data. Crucially, we scrutinize the coefficients to understand the relationships between predictors and outcomes, seeking valuable insights from the model.
+
+### Linear Credit Spread Model Perfomance
+
+Given the constraints of limited data, we opt for a 10-fold cross-validation approach to fit the three proposed linear models for predicting credit spreads. This involves partitioning the dataset into 10 folds and training the models iteratively. To ensure replicability, we introduce a random seed for randomized fold selection. Subsequently, we employ the Root Mean Square Error (RMSE) metric to evaluate model performance. The model with the lowest RMSE is chosen, indicating the most favorable predictive accuracy. This rigorous process allows us to select a robust linear model for credit spread prediction.
+
+# Results
+
+```{r}
+library(corrplot)
+library(ggplot2)
+library(magrittr)
+library(dplyr)
+library(ggplot2)
+library(knitr)
+library(gridExtra)
+library(gtsummary)
+```
+
+```{r}
+bonds <- read.csv("credit_risk_data.csv")
+#bonds$Sector[bonds$Sector == "Brokerage/Asset Managers/Exchanges"] <- "Brokerage/At Man/Ex"
+#bonds$Sector[bonds$Sector == "Consumer Non-Cyclical"] <- "Consumer-Non-Cyc"
+```
+
+```{r}
+bonds$BB_COMPOSITE <- factor(bonds$BB_COMPOSITE, levels = c('AAA', 'AA+', 'AA', 'AA-', 'A+', 'A', 'A-', 'BBB+', 'BBB', 'BBB-', 'BB+'))
+
+```
+
+## Handling NA's
+
+Given the different accounting practices of the different kinds of businesses in each of the Sectors in our universe, there are bound to be many (often very concentrated) NAs.
+
+The interest coverage ratio predictor has NAs for the entire Banking Sector. Since interest is a form of revenue for a bank (instead of an expense for other kinds of businesses), the Interest Expense accounting entry results in NA for Banking.
+
+```{r}
+# int_coverage
+int_coverage_nas <- bonds[is.na(bonds$int_coverage),] %>% count(Sector)
+int_coverage_nas <- merge(int_coverage_nas, bonds %>% count(Sector), by = "Sector")
+colnames(int_coverage_nas) <- c('Sector', 'NA_count', 'total_count')
+print(int_coverage_nas)
+```
+
+Similar to what we observed in the interest coverage ratio, the following *debt service coverage* and *cash coverage* ratios both use the Interest Expense accounting entry to calculate the ratios. Banking will not show NA in these because the denominator of each ratio calculation contains another non-NA accounting entry but it will still skew the results significantly for other Sectors.
+
+**We're considering the following options:**
+
+1\) keep interest coverage ratio which results in NA for the entire Banking Sector and remove the other two because they are skewed. If we use Sector and Interest Coverage ratio as an interaction term, [will the model be able to capture the significance of this ratio for other sectors without affecting its performance?]{.underline}
+
+2\) removing all three coverage ratios as predictors. This might result in significant predictors not being captured by the model for sectors other than Banking.
+
+### Liquidity ratios
+
+Liquidity ratios will also present some issues for the Banking sector. Liquidity risk for banking is the risk that a bank cannot meet its cash obligations due to a sudden loss of funding or a surge of withdrawals. For other sectors, mostly, liquidity risk comes from not being able to meet their short term obligations because of low sales or rising costs.
+
+As we can see from the following tables, Quick ratio has too many NAs and will be removed.
+
+We are left with the current ratio and the cash ratio. Both of them have NA for the entire Banking sector and most of the Insurance sector. We're then left with the same options that we faced with the coverage ratios:
+
+1\) keep current ratio and hope that adding an interaction term of Sector and Current ratio will capture the desired effect on our outcome
+
+2\) remove the liquidity ratios altogether
+
+```{r}
+# cash_ratio
+cash_ratio_nas <- bonds[is.na(bonds$cash_ratio),] %>% count(Sector)
+cash_ratio_nas <- merge(cash_ratio_nas, bonds %>% count(Sector), by = "Sector")
+colnames(cash_ratio_nas) <- c('Sector', 'NA_count', 'total_count')
+print(cash_ratio_nas)
+```
+
+## Diagonostics Plots
+
+-   linearity assumption ok
+
+-   normality of errors: not so nice around the tails but not too relevant
+
+-   influential points: Cook's distance ok =\> no influential points
+
+```{r}
+credit_risk_data <- bonds
+credit_spread_com <- lm(credit_spread ~ Duration + marketCapitalization + BB_COMPOSITE + roa + ebitda_margin + debt_to_assets + operating_profit_margin + score + debt_service_coverage + score * Sector + debt_to_assets * Sector, data=credit_risk_data)
+```
+
+```{r}
+# residual plots & cook's distance
+plot(credit_spread_com)
+```
+
+```{r}
+h <- hatvalues(credit_spread_com)
+residuals_sq <- residuals(credit_spread_com, type = "pearson")^2
+cooksd <- residuals_sq * h / (df.residual(credit_spread_com) * (1 - h))
+head(cooksd)
+```
+
+```{r}
+#cook's distance
+plot(cooksd, type="h", main="Cook's Distance", ylab="Cook's Distance", xlab="Observation Number")
+abline(h = 4*mean(cooksd, na.rm=T), col="red")  # threshold line
+max_cooks <- max(cooksd, na.rm = TRUE)
+threshold <- 4 * mean(cooksd, na.rm = TRUE)
+
+#cat("Maximum Cook's Distance:", max_cooks, "\n")
+#cat("Threshold Value:", threshold, "\n")
+#infinite_indices <- which(is.infinite(cooksd_logistic))
+#print(infinite_indices)
+#finance[infinite_indices, ]
+n <- length(cooksd)
+threshold <- 4/n
+
+influential_points <- which(cooksd > threshold)
+print(influential_points)
+```
+
+## Variable Selection
+
+-   Collinearity Analysis : placeholder for vif values' table
+
+## Model Fit
+
+### First model
+
+```{r}
+library(MASS)
+library(tidyverse)
+```
+
+```{r}
+ord_mod <- polr(BB_COMPOSITE ~ score + Duration + credit_spread + debt_to_assets, data=bonds, Hess=TRUE)
+summary(ord_mod)
+```
+
+```{r}
+pvals <- pnorm(-abs(summary(ord_mod)$coef[,"t value"]))*2
+ctable <- cbind(summary(ord_mod)$coef,pvals)
+
+ctable
+```
+
+```{r}
+exp_coefs <- exp(cbind(OR=coef(ord_mod),confint(ord_mod)))
+print(exp_coefs)
+```
+
+### Second model
+
+-   Full model:
+
+```{r}
+credit_spread_mod <- lm(credit_spread ~ Sector + Duration + marketCapitalization + score + BB_COMPOSITE + debt_to_assets + debt_to_equity + int_coverage + cash_coverage + current_ratio + cash_ratio + roa + ebitda_margin + debt_service_coverage + score * Sector + debt_to_assets * Sector, data=credit_risk_data)
+summary(credit_spread_mod)
+```
+
+-   Second Model, Variable Selection: RFE
+
+```{=html}
+<!-- -->
+```
+-   Third Model:
+
+```{r}
+credit_spread_com <- lm(credit_spread ~ Duration + marketCapitalization + BB_COMPOSITE + roa + ebitda_margin + debt_to_assets + operating_profit_margin + score + debt_service_coverage + score * Sector + debt_to_assets * Sector, data=credit_risk_data)
+summary(credit_spread_com)
+```
+
+# Conclusion
+
+## Findings
+
+## Limitation
+
+1.  **Dependence Among Rows:** One notable limitation of our analysis arises from the potential lack of independence among rows. Since multiple rows correspond to bonds issued by the same company, there may be interdependence among observations. A hierarchical modeling approach, incorporating random effects for companies, could address this issue by capturing the inherent correlation within the data
+2.  **Generalization to Broader Market Dynamics:** Our analysis focuses on bonds issued by companies listed in the S&P 500, limiting the generalizability of our findings to a broader market context. The dynamics of credit risk assessment may differ for companies outside this scope, and caution should be exercised when extending our conclusions to a more diverse range of entities.
+3.  **Non-Time Series Analysis:** It's essential to highlight that our study does not employ a time series analysis. This limitation restricts our ability to capture temporal dynamics and trends in credit risk over time. Future research endeavors could delve into time-series methodologies, providing a more comprehensive understanding of how credit risk evolves and responds to varying economic conditions.
+
+## Future Work
+
+1.  **Machine Learning Model Refinement:** Delving into advanced machine learning algorithms, exploring ensemble methods, or tailoring deep learning architectures specifically for credit risk assessment holds the potential to uncover novel avenues for improving predictive accuracy and unlocking additional dimensions of insight.
+2.  **Incorporate External Economic Indicators:** Integrate external economic indicators, such as interest rates, inflation, and GDP growth, into the analysis. Explore their impact on credit risk and assess how macroeconomic conditions influence the creditworthiness of companies and the corresponding bond markets.
+3.  **Stakeholder Engagement and User Feedback:** Engage with stakeholders, including investors, financial institutions, and industry experts, to gather feedback on the analysis outcomes. Understand user needs and perspectives to tailor future research efforts to address practical challenges faced by the financial community.
