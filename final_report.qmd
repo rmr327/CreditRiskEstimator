@@ -48,39 +48,61 @@ The dataset we used to analyze the research problem is a subset of the holdings 
 
 \newpage
 
-# Methods
+### Exploratory Data Analysis (EDA) and Data Manipulation
 
-## Exploratory Data Analysis (EDA) and Data Manipulation
-
-After conducting an exploratory data analysis (EDA) on our original dataset (please refer to our EDA for reference), we have identified several issues that require attention. Our aim is to address these issues to obtain a cleaner dataset.
+After conducting an exploratory data analysis (EDA) on our original dataset (please refer to our EDA for reference), we have identified several issues that require attention:
 
 ### Missing Values
 
-One notable concern is the presence of missing values, particularly in the company fundamental variables. We will thoroughly investigate the reasons behind these missing values and determine whether to drop them or employ methods such as interpolation to fill the gaps.
+Given the different accounting practices of the different kinds of businesses in each of the Sectors in our universe, there are bound to be many (often very concentrated) NAs. Our approach consists in exploring the nature of those NAs to determine if those values should be removed, replaced or handled in any other way.
 
 ```{r}
 library(dplyr)
 library(caret)
 library(ggplot2)
+library(corrplot)
+library(magrittr)
+library(knitr)
+library(gridExtra)
+library(gtsummary)
+suppressMessages(library(tidyverse))
+```
+
+```{r}
+bonds <- read.csv("credit_risk_data.csv")
+#bonds$Sector[bonds$Sector == "Brokerage/Asset Managers/Exchanges"] <- "Brokerage/At Man/Ex"
+#bonds$Sector[bonds$Sector == "Consumer Non-Cyclical"] <- "Consumer-Non-Cyc"
 ```
 
 ### Colinearity
 
-The correlation plot reveals high colinearity between company fundamental variables and sentiment variables. To mitigate this, we will perform a Variance Inflation Factor (VIF) analysis on the columns. This analysis will assist in selecting only one variable when multiple variables represent similar results, reducing redundancy.
+Many of the fundamental variables included in our model capture similar relationships and could therefore lead to increased variance in our model. To address this, we will perform a Variance Inflation Factor (VIF) analysis on the model. This analysis will assist in evaluating whether certain variables must be removed.
 
 ### Outliers
 
-The dataset may contain outliers that could significantly influence our results. We plan to conduct an influential point analysis to identify these observations and assess their impact on our analysis.
+The dataset may contain influential points that can significantly impact our estimators. We plan to perform Cook's Distance analysis to determine if any such points exist.
 
 ### Credit Ratings Categories
 
-There is a multitude of categories in credit ratings, with some having minimal data. This situation could lead to high standard errors and adversely affect the quality of our data. Our strategy is to combine categories with limited data into broader categories, addressing the potential issues related to low data volume.
+```{r}
+bonds$BB_COMPOSITE <- ifelse(bonds$BB_COMPOSITE %in% c("AAA", "AA+", "AA", "AA-"), ">A+", bonds$BB_COMPOSITE)
+bonds$BB_COMPOSITE <- ifelse(bonds$BB_COMPOSITE %in% c('BB+', 'BBB-'), "<BBB", bonds$BB_COMPOSITE)
+bonds$BB_COMPOSITE <- factor(bonds$BB_COMPOSITE, levels = c('>A+', 'A+', 'A', 'A-', 'BBB+', 'BBB', '<BBB'))
+```
+
+There is a multitude of categories in credit ratings, with some having minimal data. This situation could lead to high standard errors and adversely affect the quality of our model. Our strategy is to combine categories with limited data into broader categories, addressing the potential issues related to low data volume.
 
 By addressing these concerns through careful data manipulation, we aim to enhance the quality and reliability of our dataset for subsequent analyses.
 
+## Models
+
+\*\* include a description of the models that will be used for each research question
+
+\*\* include material from the statistical analysis plan
+
 ## Model Fit
 
-For each of the two research question, we are going to fit three models and compare the differences between them to better understand the problem. The first model will be a full model with all the variable we selected. The second model will limited to less variables. The third model will also include a interaction term.
+For each of the two research question, we are going to fit three models and compare the differences between them to better understand the problem. The first model will be a full model with all the variable we selected. The second model will be limited to fewer variables. The third model will also include interaction terms.
 
 ### Variable Selection
 
@@ -100,73 +122,27 @@ In our pursuit of building an ordinal model to infer credit scores, we have fitt
 
 Given the constraints of limited data, we opt for a 10-fold cross-validation approach to fit the three proposed linear models for predicting credit spreads. This involves partitioning the dataset into 10 folds and training the models iteratively. To ensure replicability, we introduce a random seed for randomized fold selection. Subsequently, we employ the Root Mean Square Error (RMSE) metric to evaluate model performance. The model with the lowest RMSE is chosen, indicating the most favorable predictive accuracy. This rigorous process allows us to select a robust linear model for credit spread prediction.
 
-# Results
+## Results
 
-```{r}
-library(corrplot)
-library(ggplot2)
-library(magrittr)
-library(dplyr)
-library(ggplot2)
-library(knitr)
-library(gridExtra)
-library(gtsummary)
+### Handling NAs
+
+**Coverage ratios:** The *interest coverage ratio* predictor has NAs for the entire Banking Sector. Since interest is a form of revenue for a bank (instead of an expense for other kinds of businesses), the Interest Expense accounting entry results in NA for Banking. Further evaluation is needed to see how this predictor impacts our model.
+
+```{r, include=FALSE} # int_coverage int_coverage_nas <- bonds[is.na(bonds$int_coverage),] %>% count(Sector) int_coverage_nas <- merge(int_coverage_nas, bonds %>% count(Sector), by = "Sector") colnames(int_coverage_nas) <- c('Sector', 'NA_count', 'total_count') print(int_coverage_nas)}
 ```
 
-```{r}
-bonds <- read.csv("credit_risk_data.csv")
-#bonds$Sector[bonds$Sector == "Brokerage/Asset Managers/Exchanges"] <- "Brokerage/At Man/Ex"
-#bonds$Sector[bonds$Sector == "Consumer Non-Cyclical"] <- "Consumer-Non-Cyc"
+Similar to what we observed in the interest coverage ratio, the *debt service coverage* and *cash coverage* ratios both use the Interest Expense accounting entry to calculate the ratios. Banking will not show NA in these because the denominator of each ratio calculation contains another non-NA accounting entry. The issue with using these ratios in our model is that the Banking sector is approximately 10% of our universe and the Banking sector will present artificially high levels for these ratios. For that reason, we've decided to remove *debt service coverage ratio* and *cash coverage ratio* from our model.
+
+**Liquidity ratios:** Liquidity risk for banking is the risk that a bank cannot meet its cash obligations due to a sudden loss of funding or a surge of withdrawals. For other sectors, mostly, liquidity risk comes from not being able to meet their short term obligations because of decreased revenue or rising expenses.
+
+The *current ratio* and the *cash ratio* show NA for the entire Banking sector and most of the Insurance sector. The only difference between these two predictors is how quickly they can make use of cash to meet short term obligations. Since they're so similar and given that we're dealing with long term bonds, we've decided to only keep *current ratio* in our model. There's still further evaluation that needs to be done to determine whether the significant amount of missing values makes this predictor unusable.
+
+```{r, include=FALSE} # cash_ratio cash_ratio_nas <- bonds[is.na(bonds$cash_ratio),] %>% count(Sector) cash_ratio_nas <- merge(cash_ratio_nas, bonds %>% count(Sector), by = "Sector") colnames(cash_ratio_nas) <- c('Sector', 'NA_count', 'total_count') print(cash_ratio_nas)}
 ```
 
-```{r}
-bonds$BB_COMPOSITE <- factor(bonds$BB_COMPOSITE, levels = c('AAA', 'AA+', 'AA', 'AA-', 'A+', 'A', 'A-', 'BBB+', 'BBB', 'BBB-', 'BB+'))
+### 
 
-```
-
-## Handling NA's
-
-Given the different accounting practices of the different kinds of businesses in each of the Sectors in our universe, there are bound to be many (often very concentrated) NAs.
-
-The interest coverage ratio predictor has NAs for the entire Banking Sector. Since interest is a form of revenue for a bank (instead of an expense for other kinds of businesses), the Interest Expense accounting entry results in NA for Banking.
-
-```{r}
-# int_coverage
-int_coverage_nas <- bonds[is.na(bonds$int_coverage),] %>% count(Sector)
-int_coverage_nas <- merge(int_coverage_nas, bonds %>% count(Sector), by = "Sector")
-colnames(int_coverage_nas) <- c('Sector', 'NA_count', 'total_count')
-print(int_coverage_nas)
-```
-
-Similar to what we observed in the interest coverage ratio, the following *debt service coverage* and *cash coverage* ratios both use the Interest Expense accounting entry to calculate the ratios. Banking will not show NA in these because the denominator of each ratio calculation contains another non-NA accounting entry but it will still skew the results significantly for other Sectors.
-
-**We're considering the following options:**
-
-1\) keep interest coverage ratio which results in NA for the entire Banking Sector and remove the other two because they are skewed. If we use Sector and Interest Coverage ratio as an interaction term, [will the model be able to capture the significance of this ratio for other sectors without affecting its performance?]{.underline}
-
-2\) removing all three coverage ratios as predictors. This might result in significant predictors not being captured by the model for sectors other than Banking.
-
-### Liquidity ratios
-
-Liquidity ratios will also present some issues for the Banking sector. Liquidity risk for banking is the risk that a bank cannot meet its cash obligations due to a sudden loss of funding or a surge of withdrawals. For other sectors, mostly, liquidity risk comes from not being able to meet their short term obligations because of low sales or rising costs.
-
-As we can see from the following tables, Quick ratio has too many NAs and will be removed.
-
-We are left with the current ratio and the cash ratio. Both of them have NA for the entire Banking sector and most of the Insurance sector. We're then left with the same options that we faced with the coverage ratios:
-
-1\) keep current ratio and hope that adding an interaction term of Sector and Current ratio will capture the desired effect on our outcome
-
-2\) remove the liquidity ratios altogether
-
-```{r}
-# cash_ratio
-cash_ratio_nas <- bonds[is.na(bonds$cash_ratio),] %>% count(Sector)
-cash_ratio_nas <- merge(cash_ratio_nas, bonds %>% count(Sector), by = "Sector")
-colnames(cash_ratio_nas) <- c('Sector', 'NA_count', 'total_count')
-print(cash_ratio_nas)
-```
-
-## Diagonostics Plots
+## Diagonostic Plots
 
 -   linearity assumption ok
 
@@ -212,7 +188,7 @@ print(influential_points)
 
 ## Variable Selection
 
--   Collinearity Analysis : placeholder for vif values' table
+-   Colinearity Analysis : placeholder for vif values' table
 
 ## Model Fit
 
@@ -251,13 +227,12 @@ summary(credit_spread_mod)
 
 -   Second Model, Variable Selection: RFE
 
-```{=html}
 <!-- -->
-```
+
 -   Third Model:
 
 ```{r}
-credit_spread_com <- lm(credit_spread ~ Duration + marketCapitalization + BB_COMPOSITE + roa + ebitda_margin + debt_to_assets + operating_profit_margin + score + debt_service_coverage + score * Sector + debt_to_assets * Sector, data=credit_risk_data)
+credit_spread_com <- lm(credit_spread ~ Duration + marketCapitalization + BB_COMPOSITE + roa + ebitda_margin + debt_to_assets + operating_profit_margin + score + score * Sector + debt_to_assets * Sector, data=credit_risk_data)
 summary(credit_spread_com)
 ```
 
