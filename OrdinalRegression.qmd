@@ -5,32 +5,94 @@ format: pdf
 editor: visual
 ---
 
-## Quarto
+## Overview
 
-Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
+The goal of this analysis is to find out which factors contribute to the credit rating of a company. This analysis is based on a subset of the data described in the data overview section. The number of observations are relatively evenly separated in 7 ordered categories of credit ratings. Therefore, a Ordinal Logistic Regression model is used to answer the research question.
 
-## Running Code
+## A priori Variable Selection
 
-When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
+`Sentiment Score`: Public's sentiment, as captured by a formulaic score produced using the number of positive and negative mentions on Reddit in the last one year. It is reasonable to assume that the more positive the public's sentiment is of a company, the more likely they are to have a better credit rating.
+
+`Duration`: Duration in investments quantifies the degree to which a bond's or portfolio's price is affected by shifts in interest rates. It is reasonable to assume that the higher the duration of the company, the less its credit rating is likely to be.
+
+`Debt to assest ratio`: The debt-to-assets ratio is a financial metric that compares a company's total debt to its total assets. It is a measure of financial leverage and provides insight into the proportion of a company's assets that are financed by debt. It is reasonable to assume that the lower the debt to asset ratio can cause higher credit rating.
+
+`Debt to equity ratio`: Debt-to-equity ratio is a financial metric that compares a company's total debt to its total equity. It is calculated by dividing the company's total debt by its shareholders' equity. The debt-to-equity ratio is a commonly used measure of a company's financial leverage and indicates the proportion of a company's funding that comes from debt compared to equity. It is reasonable to assume that a company with a lower Debt to equity ratio, will have higher a credit rating.
+
+`Credit spread`: Credit spread represents the additional yield or interest rate demanded by investors to hold a bond with a higher credit risk compared to a risk-free asset, such as a government bond. It is reasonable to assume that a company with lower credit spread will have a higher credit rating.
+
+`Operating profit margin`: Operating profit margin is a key financial ratio that represents the percentage of revenue that remains after operating expenses are deducted. It is reasonable to assume that a company withg a higher operating profit margin will have a higher credit rating.
+
+`EBIDTA margin`: EBITDA margin is a measure of a company's operating profitability before accounting for interest, taxes, and non-cash items. It is reasonable to assume that a company with a higher EBIDTA margin will have a better credit rating.
+
+`Return on Assets (ROA)`: Return on Assets (ROA) is a financial metric that measures a company's profitability by expressing its net income as a percentage of its total assets. It is reasonable to assume that a higher ROA, will cause a better credit rating.
+
+`Interest Coverage raito`: The interest coverage ratio is a financial metric that assesses a company's ability to meet its interest payments on outstanding debt. It is reasonable to assume that a company with a higher interest coverage ratio will cause a better credit rating.
+
+## Data Cleaning
 
 ```{r}
 bonds <- read.csv("credit_risk_data.csv")
-# Transform the 'bonds' column into an ordered factor
-bonds$BB_COMPOSITE <- ordered(bonds$BB_COMPOSITE, levels = c("AAA", "AA+", "AA", "AA-", "A+", "A", "A-", "BBB+", "BBB", "BBB-", "BB+"))
-```
 
-You can add options to executable code like this
+
+# Collapsing categories in Sector.
+bonds$Sector <- ifelse(bonds$Sector == "Brokerage/Asset Managers/Exchanges", "Finance", bonds$Sector)
+bonds$Sector <- ifelse(bonds$Sector == "Electric", "Energy", bonds$Sector)
+bonds$Sector <- ifelse(bonds$Sector == "Natural Gas", "Energy", bonds$Sector)
+bonds$Sector <- ifelse(bonds$Sector == "Reits", "Finance", bonds$Sector)
+bonds$Sector <- ifelse(bonds$Sector == "Transportation", "Communications", bonds$Sector)
+
+# collapsing categories in BB_COMPOSITE
+bonds$BB_COMPOSITE <- ifelse(bonds$BB_COMPOSITE %in% c("AAA", "AA+", "AA", "AA-"), ">A+", bonds$BB_COMPOSITE)
+bonds$BB_COMPOSITE <- ifelse(bonds$BB_COMPOSITE %in% c('BB+', 'BBB-'), "<BBB", bonds$BB_COMPOSITE)
+bonds$BB_COMPOSITE <- factor(bonds$BB_COMPOSITE, levels = c('>A+', 'A+', 'A', 'A-', 'BBB+', 'BBB', '<BBB'))
+
+# Transform the 'bonds' column into an ordered factor
+bonds$BB_COMPOSITE <- ordered(bonds$BB_COMPOSITE, levels = c(">A+", "A+", "A", "A-", "BBB+", "BBB",  "<BBB"))
+
+
+bonds$Sector <- factor(bonds$Sector)
+```
 
 ```{r, ignore = FALSE}
 #| echo: false
 library(MASS)
 library(tidyverse)
+library("car")
+library(dplyr)
+library(ordinal)
 ```
 
-The `echo: false` option disables the printing of code (only output is displayed).
+## Full Model
 
 ```{r}
-ord_mod <- polr(BB_COMPOSITE ~ score + Duration + credit_spread + debt_to_assets + , data=bonds, Hess=TRUE)
+missing_counts <- bonds %>%
+  group_by(BB_COMPOSITE) %>%
+  summarize(across(everything(), ~sum(is.na(.))))
+print(missing_counts)
+```
+
+Entries for the baking sector make up only 8.9% (210 out of 2341) of the total observations. Furthermore, some of the fundamental predictors (e.g. interest coverage, debt service coverage, cash coverage, etc.) do not apply to the Banking sector. Therefore, in order to maintain consistency, and avoid potential noise in our results, the entire Baking Sector was dropped.
+
+```{r}
+# full model
+df <- bonds[bonds$Sector != "Banking", ]
+ord_mod <- polr(BB_COMPOSITE ~ score + Duration + credit_spread + debt_to_assets + operating_profit_margin + ebitda_margin + roa + debt_to_equity + int_coverage , data=df, Hess=TRUE)
+summary(ord_mod)
+```
+
+```{r}
+ord_mod <- polr(BB_COMPOSITE ~ score * Sector + debt_to_assets + Duration  + debt_to_equity + debt_service_coverage + cash_coverage + current_ratio, data=bonds, Hess=TRUE, method = "probit")
+summary(ord_mod)
+```
+
+```{r}
+table(bonds$BB_COMPOSITE)
+table(bonds$Sector)
+```
+
+```{r}
+ord_mod <- clm(BB_COMPOSITE ~ score * Sector + debt_to_assets * Sector + Duration + debt_to_equity + debt_service_coverage + cash_coverage , data=bonds, link = "logit")
 summary(ord_mod)
 ```
 
@@ -47,6 +109,5 @@ print(exp_coefs)
 ```
 
 ```{r}
-library("car")
 vif(ord_mod)
 ```
