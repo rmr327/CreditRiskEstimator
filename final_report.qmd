@@ -50,12 +50,6 @@ The dataset we used to analyze the research problem is a subset of the holdings 
 
 ### Exploratory Data Analysis (EDA) and Data Manipulation
 
-After conducting an exploratory data analysis (EDA) on our original dataset (please refer to our EDA for reference), we have identified several issues that require attention:
-
-### Missing Values
-
-Given the different accounting practices of the different kinds of businesses in each of the Sectors in our universe, there are bound to be many (often very concentrated) NAs. Our approach consists in exploring the nature of those NAs to determine if those values should be removed, replaced or handled in any other way.
-
 ```{r, message=FALSE, warning=FALSE}
 library(dplyr)
 library(caret)
@@ -70,8 +64,43 @@ suppressMessages(library(tidyverse))
 
 ```{r}
 bonds <- read.csv("credit_risk_data.csv")
-
 ```
+
+```{r, warning=FALSE, message=FALSE, fig.width=9, fig.height=3}
+#| echo: false
+# outcome variables
+bonds$BB_COMPOSITE <- factor(bonds$BB_COMPOSITE, levels = c('AAA', 'AA+', 'AA', 'AA-', 'A+', 'A', 'A-', 'BBB+', 'BBB', 'BBB-', 'BB+'))
+plot_1 <- ggplot(bonds, aes(x = factor(BB_COMPOSITE), fill = BB_COMPOSITE)) +
+  geom_bar() +
+  labs(x = "Bloomberg Composite Credit Rating", y = "Frequency", title = "Histogram of Credit Rating") +
+  theme_minimal() +
+  theme(axis.text.x = element_blank())  # Remove x-axis ticks
+
+# Create the histogram plot
+plot_2 <- ggplot(bonds, aes(x = credit_spread)) +
+  geom_histogram(binwidth = 0.2, fill = "skyblue", color = "black") +
+  labs(x = "Credit Spread", y = NULL, 
+       title = "Histogram of Credit Spread") +
+  theme_minimal()
+
+grid.arrange(plot_1, plot_2, ncol = 2)
+```
+
+```{r}
+# credit_spread vs duration
+ggplot(subset(bonds,BB_COMPOSITE %in% c('A-', 'BBB+', 'BBB')), aes(x = Duration, y = credit_spread)) + geom_point() + facet_wrap(~BB_COMPOSITE, scales = 'free') + geom_smooth(method = 'lm', se = F) + labs(x = 'Duration', y = 'Credit spread (%)', title = 'Credit spread vs Duration', subtitle = 'How does interest rate risk affect credit spread?')
+```
+
+```{r}
+# rating vs sentiment
+ggplot(bonds, aes(x = BB_COMPOSITE, y = score)) + geom_boxplot() + labs(x = 'Credit rating', y = 'Sentiment score', title = 'Sentiment score vs Credit rating', subtitle = 'What is the market\'s appetite for risk?') 
+```
+
+After conducting an exploratory data analysis (EDA) on our original dataset (please refer to our EDA for reference), we have identified several issues that require attention:
+
+### Missing Values
+
+Given the different accounting practices of the different kinds of businesses in each of the Sectors in our universe, there are bound to be many (often very concentrated) NAs. Our approach consists in exploring the nature of those NAs to determine if those values should be removed, replaced or handled in any other way.
 
 ### Colinearity
 
@@ -214,9 +243,6 @@ From the study of the different diagnostic plots we can evaluate if our model's 
     plot(credit_spread_com, which = 1)
     ```
 
-```{=html}
-<!-- -->
-```
 -   **Normality of errors**: by studying the Q-Q plot, we can observe that the errors don't quite follow a Normal Distribution
 
     ```{r, warning = FALSE, message = FALSE}
