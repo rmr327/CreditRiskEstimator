@@ -196,3 +196,37 @@ brant_test_result <- brant(reduced_model)
 # Print the test result
 print(brant_test_result)
 ```
+
+```{r}
+# using multinomial logistic regression
+library(nnet) #package for multinomial model
+library(knitr)
+
+mult_mod <- multinom(BB_COMPOSITE ~ score + Duration + credit_spread + debt_to_assets + operating_profit_margin + ebitda_margin + roa, data = df_r)
+
+df_r <- na.omit(df_r)
+
+shuffled_data <- df_r[sample(nrow(df_r)), ]
+
+# predict(mult_mod,  head(shuffled_data, 10), type="probs")
+# predict(reduced_model, head(shuffled_data, 10), type="probs")
+
+mult_prob <- as.data.frame(predict(mult_mod, head(shuffled_data, 10), type = "probs"))
+mult_prob <- round(mult_prob, 5)  # Round to 5 decimal places
+
+# Predicted probabilities from ordinal logistic regression
+ord_prob <- as.data.frame(predict(reduced_model, head(shuffled_data, 10), type = "probs"))
+ord_prob <- round(ord_prob, 5)  # Round to 5 decimal places
+
+# Display the tables
+print("Multinomial Logistic Regression:")
+print(mult_prob)
+
+print("Ordinal Logistic Regression:")
+print(ord_prob)
+
+```
+
+```{r}
+# test
+```
