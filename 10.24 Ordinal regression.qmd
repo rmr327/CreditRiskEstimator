@@ -1,0 +1,106 @@
+---
+title: "Ordinal regression"
+format: pdf
+editor: visual
+---
+
+## Ordinal regression
+
+```{r}
+library(foreign) #package to access data type
+library(MASS) #package for model
+dat <- read.dta("https://stats.idre.ucla.edu/stat/data/ologit.dta")
+suppressMessages(library(tidyverse))
+
+```
+
+-   Data dictionary:
+
+    -   `apply`: response to question "how likely are you to apply to graduate school?" with 3 options: very likely, somewhat likely, unlikely
+
+    -   `pared`: parental education status (1=at least one parent has a graduate degree, 0 otherwise)
+
+    -   `public`: undergraduate institution type (1=public, 0=private)
+
+    -   `gpa`: current undergraduate GPA (4.0 scale)
+
+-   Calculate some summary statistics for the data. How many students are in each category of `apply`? What is the average GPA for each category of `apply`?
+
+    -   Note: For a table showing the number of each parental education status and institution type per level of `apply`, you can either use `table` or `count`. We have seen the `count` function before, and `table` works the same way (it's just not a tidyverse function). Specify the two variables within the function, where the first specified variable will show up in the row of the table and the second variable will show up in the columns (e.g., `table(dat$pared, dat$apply)`
+
+    ```{r}
+    dat %>% count(apply)
+    ```
+
+    ```{r}
+    table(dat$pared, dat$apply)
+    ```
+
+    ```{r}
+    table(dat$public, dat$apply)
+    ```
+
+### **ORDINAL REGRESSION MODEL (AKA PROPORTIONAL ODDS MODEL OR CUMULATIVE LOGIT MODEL)**
+
+We can fit the model using the `polr` function in the `MASS` package. Note that the syntax is the same as what we've seen before, but we don't need to specify `family` like we do with `glm`, because the `polr` function is specialized for the ordinal model. The `Hess=TRUE` option just stores the necessary information in the `ord_mod` object for us to access the `summary` information; we will forego the technical details here.
+
+```{r}
+ord_mod <- polr(apply ~ pared + public + gpa, data=dat, Hess=TRUE)
+summary(ord_mod)
+```
+
+Recall from the lecture videos that with the ordinal model, we have the same predictor coefficients for each level of the outcome, but different intercepts. This is why we see two components to the `summary` output: the Coefficients table and the Intercepts table.
+
+We can manually calculate the p-values:
+
+```{r}
+pvals <- pnorm(-abs(summary(ord_mod)$coef[,"t value"]))*2
+ctable <- cbind(summary(ord_mod)$coef,pvals)
+
+ctable
+```
+
+Like other models we have seen, the intercepts are not typically the focus of the interpretations. Let's focus on interpreting the coefficient estimates. First, let's exponentiate the estimates and confidence intervals to interpret on the odds ratio scale.
+
+```{r}
+exp_coefs <- exp(cbind(OR=coef(ord_mod),confint(ord_mod)))
+print(exp_coefs)
+```
+
+We can interpret the coefficient estimate of `pared` as follows:
+
+For students whose parents *did* attend college, the odds of being *more* likely (i.e., *very* or *somewhat* likely versus unlikely) to apply to graduate school is 2.85 times that of students whose parents did not go to college, holding constant all other variables.
+
+### Assessment
+
+Finally, we should assess the proportional odds assumption. To do this, we can compare the predicted probabilities using the multinomial model, which is a more precise model, to the predicted probabilities with the ordinal model. Note that this is a subjective process because it is difficult to know how different the predicted probabilities should be to conclude that the assumption is violated. It is also useful to think through whether or not it is reasonable to assume that the odds of being in one category vs another would increase proportionally.
+
+To generate predictions, let's create a new data frame with different combinations of the predictor values. It is typically easiest to use different combinations of the categorical variables and hold the continuous predictors constant.
+
+```{r}
+new.data <- data.frame(pared=c(0,1,0,1),
+                       gpa=mean(dat$gpa),
+                       public=c(0,1,1,0))
+```
+
+The new data contains a constant value of GPA and each unique combination of the values of parental education and institution type.
+
+Now we can compare predicted probabilities from the ordinal model and the multinomial model:
+
+```{r}
+# using multinomial logistic regression
+library(nnet) #package for multinomial model
+mult_mod <- multinom(apply~pared+gpa+public,
+                     data=dat)
+predict(mult_mod, new.data, type="probs")
+
+```
+
+```{r}
+# using ordinal regression
+predict(ord_mod, new.data, type="probs")
+```
+
+Notice that the predicted probabilities for the unlikely category are very similar for both models. We do see some differences for the other two categories, but overall, I would conclude that we do not have strong evidence that the proportional odds assumption is violated.
+
+You may also want to generate the confusion matrix for the multinomial model and see how it compares to the confusion matrix you generated for the ordinal model.
