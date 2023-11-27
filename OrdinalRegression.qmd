@@ -48,8 +48,9 @@ bonds$BB_COMPOSITE <- ifelse(bonds$BB_COMPOSITE %in% c('BB+', 'BBB-'), "<BBB", b
 bonds$BB_COMPOSITE <- factor(bonds$BB_COMPOSITE, levels = c('>A+', 'A+', 'A', 'A-', 'BBB+', 'BBB', '<BBB'))
 
 # Transform the 'bonds' column into an ordered factor
-bonds$BB_COMPOSITE <- ordered(bonds$BB_COMPOSITE, levels = c(">A+", "A+", "A", "A-", "BBB+", "BBB",  "<BBB"))
+bonds$BB_COMPOSITE <- ordered(bonds$BB_COMPOSITE, levels = c("<BBB", "BBB", 'BBB+', "A-", "A", "A+",  ">A+"))
 
+bonds$roa <- bonds$roa * 100
 
 bonds$Sector <- factor(bonds$Sector)
 ```
@@ -78,18 +79,18 @@ Once the A Priori variables were selected based on logical reasoning and domain 
 
 ```{r}
 # full model
-df <- bonds[bonds$Sector != "Banking", ]
-ord_mod <- polr(BB_COMPOSITE ~ score + Sector + Duration + credit_spread + debt_to_assets + operating_profit_margin + ebitda_margin + roa + debt_to_equity, data=df, Hess=TRUE)
+ord_mod <- polr(BB_COMPOSITE ~ score + Sector + Duration + credit_spread + debt_to_assets + operating_profit_margin + ebitda_margin + roa + debt_to_equity, data=bonds, Hess=TRUE)
 summary(ord_mod)
 ```
+
+![](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAaCAYAAADFTB7LAAAAcElEQVR4Xu3OwQmAQAxE0bClWYCW5N06tM6V2YPg5CjoF/JhLoHAi6iqn9eOefUbqrYvHY0cQDLyAlKRNyARmYA0ZMLRkAlGQyaU72tkAtlim7r/vJqDUDjlKBROOQyFU2icQuMUGqfQuBEaV1XPOwEx96nYACK8+wAAAABJRU5ErkJggg== "Run Current Chunk")
 
 ## Reduced Model
 
 With the goal of making the final model easier to interpret and understand, less susceptible to over-fitting, and increased generality , Likelihood Ratio Tests were performed to prune statistically insignificant predictors.
 
 ```{r}
-# Assuming original_df is your original data frame
-df_r <- df[, c("BB_COMPOSITE", "score","Sector",  "Duration", "credit_spread", "debt_to_assets", "operating_profit_margin", "ebitda_margin", "roa")]
+df_r <- bonds[, c("BB_COMPOSITE", "score", "Sector",  "Duration", "credit_spread", "debt_to_assets", "operating_profit_margin", "ebitda_margin", "roa")]
 
 df_r <- na.omit(df_r)
 
@@ -107,17 +108,20 @@ A Liklihood ratio test is performed above. The null hypothesis (H0) is that remo
 
 ```{r}
 # Assuming original_df is your original data frame
-df_r <- df[, c("BB_COMPOSITE", "score",  "Sector", "Duration", "credit_spread", "debt_to_assets", "operating_profit_margin", "ebitda_margin")]
-df_r <- na.omit(df_r)
+df_r <- bonds[, c("BB_COMPOSITE", "score", "Duration", "credit_spread", "debt_to_assets", "operating_profit_margin", "ebitda_margin", "roa")]
 
-# Define the reduced model (without the variable to be tested)
-reduced_model <- polr(BB_COMPOSITE ~ score + Duration + credit_spread + debt_to_assets + operating_profit_margin + ebitda_margin, data = df_r, Hess=TRUE)
+# Define the reduced model (without Debt to Equity Ratio and Sector )
+reduced_model <- polr(BB_COMPOSITE ~ score + 
+                        Duration  + 
+                        credit_spread + 
+                        debt_to_assets + 
+                        operating_profit_margin + 
+                        ebitda_margin + 
+                        roa, 
+                      data = df_r, 
+                      Hess=TRUE)
 
-# Perform likelihood ratio test
-lr_test <- lrtest(ord_mod, reduced_model)
-
-# Print the results
-print(lr_test)
+summary(reduced_model)
 ```
 
 ```{r}
@@ -126,23 +130,56 @@ table(bonds$Sector)
 ```
 
 ```{r}
-pvals <- pnorm(-abs(summary(ord_mod)$coef[,"t value"]))*2
-ctable <- cbind(summary(ord_mod)$coef,pvals)
+pvals <- pnorm(-abs(summary(reduced_model)$coef[,"t value"]))*2
+ctable <- cbind(summary(reduced_model)$coef,pvals)
 
 ctable
 ```
 
 ```{r}
-exp_coefs <- exp(cbind(OR=coef(ord_mod),confint(ord_mod)))
+exp_coefs <- exp(cbind(OR=coef(reduced_model),confint(reduced_model)))
 print(exp_coefs)
 ```
 
 ```{r}
-vif(reduced_model)
+library(kableExtra)
+
+# Print as a pretty table with styling
+kable(exp_coefs, format = "markdown", digits = c(3, 3, 3, 3), col.names = c("OR", "2.5%", "97.5%"), align = "c") %>%
+  kable_styling(full_width = FALSE, position = "center", bootstrap_options = "striped")
 ```
 
 ```{r}
-vif(ord_mod)
+vif_model <- vif(reduced_model)
+print(vif_model)
+```
+
+```{r}
+# Plotting boxplot
+boxplot(credit_spread ~ BB_COMPOSITE, data = bonds, xlab = "BB Composite", ylab = "Credit Spread",
+        main = "Credit Spread vs BB Composite")
+
+boxplot(roa ~ BB_COMPOSITE, data = bonds, xlab = "BB Composite", ylab = "Return on Assets (ROA)",
+        main = "ROA vs BB Composite")
+
+boxplot(Duration ~ BB_COMPOSITE, data = bonds, xlab = "BB Composite", ylab = "Duration",
+        main = "Duration vs BB Composite")
+
+boxplot(debt_to_assets ~ BB_COMPOSITE, data = bonds, xlab = "BB Composite", ylab = "Debt to Asset",
+        main = "Debt to Asset vs BB Composite")
+
+boxplot(debt_to_assets ~ BB_COMPOSITE, data = bonds, xlab = "BB Composite", ylab = "Debt to Asset",
+        main = "Debt to Asset vs BB Composite")
+
+
+# You can customize the plot further based on your preferences
+```
+
+```{r}
+df_filtered <- bonds[,c('BB_COMPOSITE', 'score', 'Duration', 'credit_spread', 'debt_to_assets', 'operating_profit_margin', 'ebitda_margin', 'roa')]
+df_filtered <- na.omit(df_filtered)
+confusionMatrix(predict(reduced_model), na.omit(df_filtered)$BB_COMPOSITE, mode = 'everything')
+
 ```
 
 ### Proportional Odds assumption
