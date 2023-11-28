@@ -77,7 +77,7 @@ bonds <- read.csv("credit_risk_data.csv")
 
 Many of the fundamental variables included in our model capture similar relationships and could therefore lead to increased variance in our model. To address this, we will perform a Variance Inflation Factor (VIF) analysis on the model. This analysis will assist in evaluating whether certain variables must be removed.
 
-### Outliers
+### Influential Points
 
 The dataset may contain influential points that can significantly impact our estimators. We plan to perform Cook's Distance analysis to determine if any such points exist.
 
@@ -190,8 +190,21 @@ summary(credit_spread_red)
 
 -   Third Model:
 
+    ```{r}
+    correlation <- cor(bonds$ebitda_margin, bonds$credit_spread)
+    print(paste("Correlation coefficient: ", correlation))
+    ggplot(bonds, aes(x = ebitda_margin, y = credit_spread)) +
+      geom_point() +
+      geom_smooth(method = "lm", color = "blue") +
+      theme_minimal() +
+      labs(title = "Scatter Plot of Ebitda Margin vs. Credit Spread",
+           subtitle = paste("Correlation: ", round(correlation, 2)),
+           x = "Ebitda Margin",
+           y = "Credit Spread")
+    ```
+
 ```{r}
-credit_spread_com <- lm(credit_spread ~ Sector + 
+credit_spread <- lm(credit_spread ~ Sector + 
                           Duration + 
                           marketCapitalization + 
                           BB_COMPOSITE + 
@@ -199,24 +212,109 @@ credit_spread_com <- lm(credit_spread ~ Sector +
                           ebitda_margin + 
                           debt_to_assets + 
                           operating_profit_margin + 
-                          score + 
+                          score +
                           score * Sector + 
                           debt_to_assets * Sector, 
-                        data=bonds) 
-summary(credit_spread_com)
+                          data=bonds) 
+summary(credit_spread)
+```
+
+```{r}
+#correlation between credit rating vs credit spread
+ggplot(bonds, aes(x = BB_COMPOSITE, y = credit_spread)) + 
+  geom_boxplot() +
+  theme_minimal() +
+  labs(title = "Box Plot of Credit Rating vs Credit Spread",
+       x = "BB Composite Category",
+       y = "Credit Spread")
+```
+
+### Linear Regression Model Assessment and Assumption
+
+```{r}
+library(car)
+vif_model <- vif(credit_spread, type = 'predictor')
+print(vif_model)
+```
+
+```{r}
+# number of lines with nas in the bonds dataset
+num_rows_with_na <- sum(apply(bonds, 1, function(x) any(is.na(x))))
+
+# Print the result
+print(num_rows_with_na
+```
+
+```{r}
+#inputting missing value cross validation
+# Set up training control
+train_control <- trainControl(method = "cv", number = 10, allowParallel = TRUE)
+
+# Set up pre-processing steps (for example, mean imputation)
+pre_process <- preProcess(bonds, method = 'medianImpute')
+
+# Pre-process the data
+data_processed <- predict(pre_process, newdata = bonds)
+
+your_formula <- credit_spread ~ Sector + 
+                          Duration + 
+                          marketCapitalization + 
+                          BB_COMPOSITE + 
+                          roa + 
+                          ebitda_margin + 
+                          debt_to_assets + 
+                          operating_profit_margin + 
+                          score +
+                          score * Sector + 
+                          debt_to_assets * Sector
+# Perform cross-validation with the processed data
+model_cv2 <- train(your_formula, data = data_processed, method = "lm", trControl = train_control)
+print(model_cv2)
+```
+
+```{r}
+#cv with subset
+library(caret)
+# Subset the original data
+subset_data <- bonds[, c("credit_spread", "Sector", "Duration", "marketCapitalization", 
+                                 "BB_COMPOSITE", "roa", "ebitda_margin", "debt_to_assets", 
+                                 "operating_profit_margin", "score")]
+
+credit_spread_cv3 <- na.omit(subset_data)
+formula3 <- credit_spread ~ Sector + 
+                          Duration + 
+                          marketCapitalization + 
+                          BB_COMPOSITE + 
+                          roa + 
+                          ebitda_margin + 
+                          debt_to_assets + 
+                          operating_profit_margin + 
+                          score +
+                          score * Sector + 
+                          debt_to_assets * Sector
+
+# Set up training control
+set.seed(123)  # Setting seed for reproducibility
+train_control <- trainControl(method="cv", number=10)
+
+# Perform 10-fold cross-validation
+model_cv3 <- train(formula3, data=credit_spread_cv3, method="lm", trControl=train_control)
+
+# Print the results
+print(model_cv3)
 ```
 
 From the study of the different diagnostic plots we can evaluate if our model's assumptions are being violated.
 
 -   **Linearity**: the residuals vs fitted plot shows no signs of non-linearity
 
-    ```{r, warning=FALSE}
-    plot(credit_spread_com, which = 1)
+    ```{r, warning=FALSE, fig.width=10, fig.height=6}
+    par(mfrow=c(2, 2))
+    plot(credit_spread)
     ```
 
-```{=html}
 <!-- -->
-```
+
 -   **Normality of errors**: by studying the Q-Q plot, we can observe that the errors don't quite follow a Normal Distribution
 
     ```{r, warning = FALSE, message = FALSE}

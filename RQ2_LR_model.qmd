@@ -83,31 +83,23 @@ ggplot(credit_risk_data, aes(x = YTM...., y = credit_spread)) +
 ```
 
 ```{r}
-#RFE to select top variables correlated with price
-# Select numeric columns only
 numeric_data <- credit_risk_data %>%
   select_if(is.numeric)
 head(numeric_data)
-# Specify the outcome and predictor variables
 outcome <- "credit_spread"
-#avoid varibales with high collinearity
 exclude_columns <- c("credit_spread", "YTM....")
-predictors <- setdiff(names(numeric_data), exclude_columns)  # All numeric columns except for the outcome
+predictors <- setdiff(names(numeric_data), exclude_columns)
 
-# Define the control using a linear model (lm), a 10-fold CV, and using the RMSE to choose the best model
 ctrl <- rfeControl(functions=lmFuncs, method="cv", number=10)
 
 maxVariablesToConsider <- min(10, length(predictors)) # Ensure we don't exceed the total number of available predictors
 results <- rfe(numeric_data[, predictors], numeric_data[, outcome], 
                sizes=seq(1, maxVariablesToConsider), rfeControl=ctrl)
-
-# Print results
 print(results)
 ```
 
 ```{r}
 ## top 5 influential variables for credit spread as calculated by RFE
-
 credit_spread_rfe2 <- lm(credit_spread ~ roa + ebitda_margin + debt_to_assets + operating_profit_margin + positiveScore, data=credit_risk_data)
 summary(credit_spread_rfe2)
 ```
