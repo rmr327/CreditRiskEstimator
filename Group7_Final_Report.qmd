@@ -37,6 +37,8 @@ library(gtsummary)
 library(caret)
 library(car)
 suppressMessages(library(tidyverse))
+library(MASS)
+library(lmtest) # For likelihood ratio test
 ```
 
 ## Data Cleaning
@@ -83,11 +85,29 @@ figure_1
 
 ## Methodology
 
+### Research Question 1
+
+### Research Question 2
+
+This section will discuss the methodology for answer our research question 1. Recall that research question 2 is: "What factors influence a company's credit rating?"
+
+##### Technique
+
+Given the ordinal nature of the outcome variable (Bloomberg Composite Credit Ratings), Ordinal Logistic Regression was chosen to answer the research question. Ordinal logistic regression is a statistical model used to analyze ordinal data, which is categorical data with an ordered ranking. Unlike nominal logistic regression, which is used for un-ordered categorical data, ordinal logistic regression takes into account the ordering of the categories.
+
+##### Assumptions
+
+The assumptions for Ordinal Logistic Regression is very similar the Linear Regression model from research question 1, with the added assumption of Proportional Odds. The Proportional Odds assumption demands that the relationship between the predictors and the odds of being in a higher category is constant across all levels of the dependent variable.
+
+##### Assessments
+
+To assess the validity of the final model, .....
+
 ## Model Results and Discussion
 
 ### Research Question 1
 
-This section will discuss the results from linear regression model and disucss them based on research question 1. Recall that research question 1 is: "Can we predict a certain bond's credit spread based on a company's fundamentals and the market's sentiment related to that company?" and have credit spread as the outcome variable.
+This section will discuss the results from linear regression model and discuss them based on research question 1. Recall that research question 1 is: "Can we predict a certain bond's credit spread based on a company's fundamentals and the market's sentiment related to that company?" and have credit spread as the outcome variable.
 
 Priori model
 
@@ -139,7 +159,7 @@ summary(credit_spread)
 Table A: Credit Spread Selected Variable Linear Regression Model Output (Partial)
 
 |                   |                           |                    |             |             |
-|-------------------|---------------|-------------|---------------|---------------|
+|---------------|---------------|---------------|---------------|---------------|
 | **Variables**     | **Estimated Coefficient** | **Standard Error** | **t-Value** | **p-Value** |
 | Duration          | 2.729e-02                 | 1.371e-03          | 19.901      | \< 2e-16    |
 | BB COMPOSITEA+    | 1.834e-01                 | 4.255e-02          | 4.310       | 1.71e-05    |
@@ -149,7 +169,7 @@ Table A: Credit Spread Selected Variable Linear Regression Model Output (Partial
 | BB COMPOSITE\<BBB | 1.123e+00                 | 4.141e-02          | 27.121      | \< 2e-16    |
 | Ebitda margin     | -3.441e-01                | 5.115e-02          | -6.727      | 2.28e-11    |
 
-## Model Assessment
+#### Model Assessment
 
 From **Table B**, we find that the root mean squared error (RMSE) from selected variable model is smaller than that of the priori model (0.2774 \< 0.2818). This suggests that the selected variable model performs better. This might be due to the fact that interaction terms are added for the selected variable model. Moreover, the RMSE values from cross validation are similar to RMSE from model output, which suggests that overfiting is avoided pretty well.
 
@@ -158,7 +178,7 @@ R-squared from model output is 0.674, which claims that 67.4% of the variation i
 Table B: Cross Validation and Model Matrices
 
 |              |              |                  |                           |                  |
-|--------------|--------------|--------------|----------------|----------------|
+|---------------|---------------|---------------|---------------|---------------|
 |              | Priori Model | Model (selected) | Cross Validation (Priori) | Cross Validation |
 | RMSE         | 0.2818       | 0.2774           | 0.2863259                 | 0.2793178        |
 | R-squared    | 0.6725       | 0.674            | 0.6610463                 | 0.6639721        |
@@ -225,7 +245,7 @@ print(vif_model)
 Table C: VIF Output and GVIF Values
 
 |        Variables        |     GVIF     | Degree of freedom | **GVIF\^(1/(2\*Df))** |
-|:---------------------:|:------------------:|:----------------:|:------------:|
+|:-------------------:|:----------------:|:---------------:|:---------------:|
 |         Sector          | 2.182726e+01 |        26         |       1.061085        |
 |        Duration         | 1.055998e+00 |         1         |       1.027618        |
 |  Market Capitalization  | 2.762059e+00 |         1         |       1.661944        |
@@ -244,3 +264,45 @@ Figure 2: Diagnostic Plots For Model Output
 par(mfrow=c(1, 4))
 plot(credit_spread)
 ```
+
+### Research Question 2
+
+In this section, we will delve into the outcomes derived from our research question 2. Recall that research question 2 is: "What factors influence a company's credit rating?" The goal of this analysis is to find out which factors contribute to the credit rating of a company. This analysis is based on a subset of the data described in the data overview section. The number of observations are relatively evenly separated into7 ordered categories of credit ratings. Therefore, a Ordinal Logistic Regression model is used to answer the research question.
+
+## Modeling
+
+##### Full Model
+
+A Priori variable selection was done to make the initial model. The A priori variables were selected based on our EDA and domain knowledge.
+
+```{r}
+# full model
+ord_mod <- polr(BB_COMPOSITE ~ score + Sector + Duration + credit_spread + debt_to_assets + operating_profit_margin + ebitda_margin + roa + debt_to_equity, data=bonds, Hess=TRUE)
+summary(ord_mod)
+```
+
+##### Reduced Model
+
+With the goal of making the final model easier to interpret and understand, less susceptible to over-fitting, and increased generality , Likelihood Ratio Tests were performed to prune statistically insignificant predictors.
+
+```{r}
+# Assuming original_df is your original data frame
+df_r <- bonds[, c("BB_COMPOSITE", "score","Sector",  "Duration", "credit_spread", "debt_to_assets", "operating_profit_margin", "ebitda_margin", "roa")]
+
+df_r <- na.omit(df_r)
+
+# Define the reduced model (without the variable to be tested)
+reduced_model <- polr(BB_COMPOSITE ~ score + Sector + Duration + credit_spread + debt_to_assets + operating_profit_margin + ebitda_margin + roa, data = df_r, Hess=TRUE)
+
+# Perform likelihood ratio test
+lr_test <- lrtest(ord_mod, reduced_model)
+
+# Print the results
+print(lr_test)
+```
+
+A Liklihood ratio test is performed above. The null hypothesis (H0) is that removing **`debt_to_equity`** does not significantly worsen the model fit. The chi-squared statistic is 0.1586 with 1 degree of freedom, resulting in a p-value of 0.6904. The p-value is greater than the typical significance level of 0.05, suggesting that there is not enough evidence to reject the null hypothesis. Therefore, based on the likelihood ratio test, removing the **`debt_to_equity`** variable does not significantly impact the model fit, and Model 2 may be preferred due to its simplicity.
+
+##### Note on Interaction term
+
+An interaction term was not included in the final model, since the chosen interaction variable was introducing perfect separability in the model. This is done to address the numerical instability and convergence problems that can arise when estimating the model parameters. By removing the variable, we can avoid the situation where certain levels of the "Sector" variable perfectly predict specific credit score categories, making the model more stable and avoiding potential issues like infinite coefficients or standard errors.
