@@ -1,0 +1,246 @@
+---
+title: "Group7_Final_Report"
+author: "Kelly Tong, Rakeen Rouf, Lisa Wang, Javier Cervantes"
+format: pdf
+editor: visual
+---
+
+## Introduction
+
+In the complex landscape of finance, the management and assessment of credit risk play pivotal roles in shaping investment strategies and influencing market dynamics. The finance problem at the heart of this research revolves around the need for a deeper understanding of credit risk within the context of bonds issued by companies listed in the S&P 500. As investors seek avenues to optimize their portfolios and financial institutions strive for effective risk management, the questions of what factors contribute to a bond's credit rating and how credit spreads can be predicted become paramount. In an ever-evolving financial environment, where market conditions and sentiment can swiftly impact investment outcomes, addressing these questions is not merely an academic pursuit but a practical necessity. The outcomes of this analysis hold the potential to refine credit risk assessment methodologies, offering tangible benefits for investors, financial analysts, and the broader financial ecosystem.
+
+The dataset we used to analyze the research problem is a subset of the holdings within an ETF, exclusively representing companies listed in the S&P 500. It comprises \*\*2,341\*\* rows, with each row corresponding to a specific bond issued by an S&P 500 company. Across the dataset, there are \*\*34\*\* variables, which can be grouped into four distinct categories:
+
+1.  \*\*Bond information from iShare:\*\* Information related to the bonds, including the issuer's name, industry sector, price, duration, yield to maturity, issuer's stock ticker, and market capitalization. Sourced from the USIG Ishares Credit Bond ETF\[\^1\]
+
+2.  \*\*Company fundamentals from Yahoo Finance:\*\* Company fundamentals, including various financial ratios (e.g., revenue, debt). Sourced from Yahoo Finance\[\^2\] using the yfinance package\[\^3\].
+
+3.  \*\*Credit ratings from Bloomberg:\*\* Credit ratings from Fitch, Moody's, and S&P, and a composite credit rating. Sourced from the Bloomberg Terminal\[\^4\]
+
+4.  \*\*Social sentiment indicators from Finhubb API:\*\* Social sentiment indicators including the number of positive and negative mentions on Reddit last year. Sourced from the Finnhub API\[\^5\]
+
+```{r echo=FALSE, results='hide', warning=FALSE}
+#reading dataset 
+bonds <- read.csv("credit_risk_data.csv")
+```
+
+```{r echo=FALSE, results='hide', warning=FALSE, message=FALSE}
+#loading packages
+library(dplyr)
+library(caret)
+library(ggplot2)
+library(corrplot)
+library(magrittr)
+library(knitr)
+library(gridExtra)
+library(gtsummary)
+library(caret)
+library(car)
+suppressMessages(library(tidyverse))
+```
+
+## Data Cleaning
+
+```{r echo=FALSE, results='hide'}
+# collapsing credit ratings
+bonds$BB_COMPOSITE <- ifelse(bonds$BB_COMPOSITE %in% c("AAA", "AA+", "AA", "AA-"), ">A+", bonds$BB_COMPOSITE)
+bonds$BB_COMPOSITE <- ifelse(bonds$BB_COMPOSITE %in% c('BB+', 'BBB-'), "<BBB", bonds$BB_COMPOSITE)
+bonds$BB_COMPOSITE <- factor(bonds$BB_COMPOSITE, levels = c('>A+', 'A+', 'A', 'A-', 'BBB+', 'BBB', '<BBB'))
+```
+
+```{r echo=FALSE, results='hide'}
+# Collapsing categories in Sector.
+bonds$Sector <- ifelse(bonds$Sector == "Brokerage/Asset Managers/Exchanges", "Finance", bonds$Sector)
+bonds$Sector <- ifelse(bonds$Sector == "Electric", "Energy", bonds$Sector)
+bonds$Sector <- ifelse(bonds$Sector == "Natural Gas", "Energy", bonds$Sector)
+bonds$Sector <- ifelse(bonds$Sector == "Reits", "Finance", bonds$Sector)
+bonds$Sector <- ifelse(bonds$Sector == "Transportation", "Communications", bonds$Sector)
+```
+
+Influential Points (Cook's Distance)
+
+(code for cook's distance and plot)
+
+Missing Values
+
+## Data Exploration
+
+Credit Spread vs Credit Rating (BB Composite)
+
+```{r echo=FALSE, results='hide'}
+#correlation between credit rating vs credit spread
+figure_1 <- ggplot(bonds, aes(x = BB_COMPOSITE, y = credit_spread)) + 
+  geom_boxplot() +
+  theme_minimal() +
+  labs(title = "Figure 1: Box Plot of Credit Rating vs Credit Spread",
+       x = "BB Composite Category",
+       y = "Credit Spread")
+```
+
+```{r echo=FALSE, results='hide'}
+figure_1
+```
+
+## Methodology
+
+## Model Results and Discussion
+
+### Research Question 1
+
+This section will discuss the results from linear regression model and disucss them based on research question 1. Recall that research question 1 is: "Can we predict a certain bond's credit spread based on a company's fundamentals and the market's sentiment related to that company?" and have credit spread as the outcome variable.
+
+Priori model
+
+```{r echo=FALSE, results='hide'}
+credit_spread_priori <- lm(credit_spread ~ Sector + 
+                          Duration + 
+                          marketCapitalization + 
+                          BB_COMPOSITE + 
+                          debt_to_assets + 
+                          debt_to_equity + 
+                          int_coverage + 
+                          cash_coverage + 
+                          current_ratio + 
+                          cash_ratio + 
+                          roa + 
+                          ebitda_margin + 
+                          debt_service_coverage  + 
+                          score, 
+                          data=bonds) 
+summary(credit_spread_priori)
+```
+
+Selected Variable model
+
+**Table A** includes all the statistically significant predictor results from the linear regression model output. Their statistical significance is demonstrated by a small p-value (smaller than 0.001). Understanding the financial concepts associated with the predictors and their correlation with the outcome variable credit spread (from data exploration section) support interpreting these output thoroughly.
+
+Duration, which measures the sensitivity of bond price to interest rates variation, is often used to reflect the bond's interest rate risk. The model result demonstrates that for every unit increase in duration, credit spread increases by 0.02729 units. This positive relationship can be understood through interest rate risk and default time risk. Longer-duration bonds are more sensitive to changes in interest rates. When interest rates rise, the prices of these bonds fall more sharply compared to short-duration bonds. Additionally, longer the duration of a bond, the longer the period over which the issuer must maintain its financial health to avoid default. These all lead to increase uncertainty, risk and risk premum, which are reflected by increased credit spread.
+
+BB composite, which measures credit rating, have all positive estimated coefficients. However, it actually holds a negative correlation with credit spread as we have set the default reference level to "larger than A+ (\>A+)." The positive coefficients resulted from the fact that all the displayed ratings are lower or equal to than A+. This inverse relationship is also demonstrated by **Figure 1** in data exploration, as lower rating hold higher median credit spread. Financially, this also matches with our expectation, as credit spread tends to widen when credit rating drops due to increase potential risk and less liquidity with lower rated companies.
+
+Editda margin measures a company's operating profitability as a percentage of its revenue. The estimated coefficient suggests that as Editda margin increases by one unit, credit spread will decrease by 0.3441 units. This inverse correlation is supported by its financial implications. A higher EBITDA margin indicates that a company is generating substantial earnings from its operations relative to its revenue, suggesting better financial health and efficiency. Thus companies with higher EBITDA margins are generally seen more capable of covering their interest expenses and other financial obligations. It can also increase investor confidence, which leads to lower yields demanded by investors. These all translate into lower credit spreads.
+
+```{r echo=FALSE, results='hide'}
+credit_spread <- lm(credit_spread ~ Sector + 
+                          Duration + 
+                          marketCapitalization + 
+                          BB_COMPOSITE + 
+                          roa + 
+                          ebitda_margin + 
+                          debt_to_assets + 
+                          operating_profit_margin + 
+                          score +
+                          score * Sector + 
+                          debt_to_assets * Sector, 
+                          data=bonds) 
+summary(credit_spread)
+```
+
+Table A: Credit Spread Selected Variable Linear Regression Model Output (Partial)
+
+|                   |                           |                    |             |             |
+|-------------------|---------------|-------------|---------------|---------------|
+| **Variables**     | **Estimated Coefficient** | **Standard Error** | **t-Value** | **p-Value** |
+| Duration          | 2.729e-02                 | 1.371e-03          | 19.901      | \< 2e-16    |
+| BB COMPOSITEA+    | 1.834e-01                 | 4.255e-02          | 4.310       | 1.71e-05    |
+| BB COMPOSITEA-    | 3.409e-01                 | 4.129e-02          | 8.255       | 2.80e-16    |
+| BB COMPOSITEBBB+  | 5.567e-01                 | 3.874e-02          | 14.371      | \< 2e-16    |
+| BB COMPOSITEBBB   | 7.603e-01                 | 3.690e-02          | 20.602      | \< 2e-16    |
+| BB COMPOSITE\<BBB | 1.123e+00                 | 4.141e-02          | 27.121      | \< 2e-16    |
+| Ebitda margin     | -3.441e-01                | 5.115e-02          | -6.727      | 2.28e-11    |
+
+## Model Assessment
+
+From **Table B**, we find that the root mean squared error (RMSE) from selected variable model is smaller than that of the priori model (0.2774 \< 0.2818). This suggests that the selected variable model performs better. This might be due to the fact that interaction terms are added for the selected variable model. Moreover, the RMSE values from cross validation are similar to RMSE from model output, which suggests that overfiting is avoided pretty well.
+
+R-squared from model output is 0.674, which claims that 67.4% of the variation in dependent variable can be explained by the model. This is a good enough r-squared in most cases. F-statistics can be used to test the overall significance of the model. While better F-statistics generally suggests higher significance, it needs to be interpreted in conjunction with the p-values. Though the second model has a lower F-statistics than the priori model (106.9 \< 125.4), it has a higher model complexity as it included interaction terms.
+
+Table B: Cross Validation and Model Matrices
+
+|              |              |                  |                           |                  |
+|--------------|--------------|--------------|----------------|----------------|
+|              | Priori Model | Model (selected) | Cross Validation (Priori) | Cross Validation |
+| RMSE         | 0.2818       | 0.2774           | 0.2863259                 | 0.2793178        |
+| R-squared    | 0.6725       | 0.674            | 0.6610463                 | 0.6639721        |
+| MAE          | NA           | NA               | 0.2033042                 | 0.1998454        |
+| F-statistics | 125.4        | 106.9            | NA                        | NA               |
+
+```{r echo=FALSE, results='hide'}
+# Subset the original data
+subset_data_priori <- na.omit(bonds[, c("credit_spread", "Sector", "Duration", "marketCapitalization", "BB_COMPOSITE", "debt_to_equity", "int_coverage", "cash_coverage", "current_ratio", "cash_ratio", "debt_service_coverage", "roa", "ebitda_margin", "debt_to_assets", "score")])
+subset_data_selected <- na.omit(bonds[, c("credit_spread", "Sector", "Duration", "marketCapitalization", "BB_COMPOSITE", "roa", "ebitda_margin", "debt_to_assets", "operating_profit_margin", "score")])
+
+# Define formulas
+formula_priori <- credit_spread ~ Sector + 
+                          Duration + 
+                          marketCapitalization + 
+                          BB_COMPOSITE + 
+                          debt_to_assets + 
+                          debt_to_equity + 
+                          int_coverage + 
+                          cash_coverage + 
+                          current_ratio + 
+                          cash_ratio + 
+                          roa + 
+                          ebitda_margin + 
+                          debt_service_coverage  + 
+                          score
+
+formula_selected <- credit_spread ~ Sector + 
+                          Duration + 
+                          marketCapitalization + 
+                          BB_COMPOSITE + 
+                          roa + 
+                          ebitda_margin + 
+                          debt_to_assets + 
+                          operating_profit_margin + 
+                          score +
+                          score * Sector + 
+                          debt_to_assets * Sector
+
+# Set up training control
+set.seed(123)  # Setting seed for reproducibility
+train_control <- trainControl(method="cv", number=10)
+
+# Perform 10-fold cross-validation for the priori model
+cv_priori <- train(formula_priori, data=subset_data_priori, method="lm", trControl=train_control)
+
+# Perform 10-fold cross-validation for the selected variable model
+cv_selected <- train(formula_selected, data=subset_data_selected, method="lm", trControl=train_control)
+
+# Print the results
+print("cross validation for priori model: ") 
+print(cv_priori) 
+print("cross validation for selected variable model: ") 
+print(cv_selected) 
+```
+
+VIF is also processed for testing collinearity. All modified GVIF values (shown in **Table C**) for selected predictors are less than 2. This shows that no serious collinearity exists for the model.
+
+```{r echo=FALSE, results='hide', warning=FALSE}
+vif_model <- vif(credit_spread, type = 'predictor')
+print(vif_model)
+```
+
+Table C: VIF Output and GVIF Values
+
+|        Variables        |     GVIF     | Degree of freedom | **GVIF\^(1/(2\*Df))** |
+|:---------------------:|:------------------:|:----------------:|:------------:|
+|         Sector          | 2.182726e+01 |        26         |       1.061085        |
+|        Duration         | 1.055998e+00 |         1         |       1.027618        |
+|  Market Capitalization  | 2.762059e+00 |         1         |       1.661944        |
+|      BB COMPOSITE       | 1.383921e+01 |         6         |       1.244780        |
+|           roa           | 2.527011e+00 |         1         |       1.589658        |
+|      ebitda margin      | 2.544020e+00 |         1         |       1.594998        |
+|     debt to assets      | 3.081602e+07 |        17         |       1.660574        |
+| operating profit margin | 1.623157e+00 |         1         |       1.274032        |
+|          score          | 2.580289e+09 |        17         |       1.891532        |
+
+To verify that the assumptions for linear regression are met by the model, diagnostic plots on residuals are plotted (**Figure 2**). The plot on residuals and fitted values confirms that the linearity assumption is met, as the residuals are randomly distributed around the horizontal axis (at zero). The Q-Q residuals plot verifies the normality of residual assumption as the points fall approximately in a straight line. The scale location plot have residuals spread evenly across all levels of fitted value, which confirms that the homoscedasticity assumption is hold. The last plot on residual and leverage shows that there are no influential points as there are no points outside of the cook's distance boundaries.
+
+Figure 2: Diagnostic Plots For Model Output
+
+```{r echo=FALSE, warning=FALSE, fig.width=10, fig.height=3}
+par(mfrow=c(1, 4))
+plot(credit_spread)
+```
