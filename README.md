@@ -1,5 +1,5 @@
 # CreditRiskEstimator
-#### By: Rakeen R, Javier C, Kelly T & Lisa W**
+#### By: Rakeen R, Javier C, Kelly T & Lisa W
 ---
 **Project Presentation**
 
