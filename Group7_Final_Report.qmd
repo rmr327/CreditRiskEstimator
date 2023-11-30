@@ -454,7 +454,7 @@ ggplot(conf_matrix_df, aes(x = Reference, y = Prediction, label = Freq)) +
 
 To check the overall performance of the final model, a confusion matrix shown in the figure above was produced. The overall statistics from the confusion matrx is showed in the table table above. The overall accuracy indicates that the model correctly predicted the credit ratings for approximately 53.23% of the observations. The Kappa statistic measures the agreement between the predicted and actual ratings, considering the agreement occurring by chance. A Kappa value of 0.4047 suggests a moderate level of agreement beyond chance. The No Information Rate represents the accuracy achieved by always predicting the most frequent class. The model outperforms this baseline accuracy significantly. In summary, the model demonstrates a moderate level of accuracy and agreement, outperforming a baseline approach that predicts the most frequent class.
 
-##### Model Result
+##### Model Results
 
 ```{r echo=FALSE, results='hide', warning=FALSE, message=FALSE}
 ```
@@ -471,3 +471,7 @@ To check the overall performance of the final model, a confusion matrix shown in
 | EBIDTA Margin                | 0.779      | 0.460 | 1.318 | 0.353   |
 | Return on Assets (ROA)       | 1.131      | 1.087 | 1.178 | \<0.01  |
 | Log of Market Capitalization | 2.960      | 2.635 | 3.330 | \<0.01  |
+
+The table above answers our research question and shows us the statistical relationship between each of our predictor variables and credit rating of a company.
+
+Investors often rely on credit ratings to assess the creditworthiness of companies before making investment decisions. The insights gained from these results can guide investors in evaluating the risk associated with companies' financial profiles, helping them make more informed and prudent investment choices.
