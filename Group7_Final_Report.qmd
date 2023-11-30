@@ -453,3 +453,21 @@ ggplot(conf_matrix_df, aes(x = Reference, y = Prediction, label = Freq)) +
 | No Information Rate     | 33.61 %          |
 
 To check the overall performance of the final model, a confusion matrix shown in the figure above was produced. The overall statistics from the confusion matrx is showed in the table table above. The overall accuracy indicates that the model correctly predicted the credit ratings for approximately 53.23% of the observations. The Kappa statistic measures the agreement between the predicted and actual ratings, considering the agreement occurring by chance. A Kappa value of 0.4047 suggests a moderate level of agreement beyond chance. The No Information Rate represents the accuracy achieved by always predicting the most frequent class. The model outperforms this baseline accuracy significantly. In summary, the model demonstrates a moderate level of accuracy and agreement, outperforming a baseline approach that predicts the most frequent class.
+
+##### Model Result
+
+```{r echo=FALSE, results='hide', warning=FALSE, message=FALSE}
+```
+
+*Table 9: Final Model Results*
+
+| Predictor Variables          | Odds Ratio | 2.5%  | 97.5% | P-Value |
+|------------------------------|------------|-------|-------|---------|
+| Sentiment Score              | 0.999      | 0.995 | 1.003 | 0.598   |
+| Duration                     | 1.132      | 1.101 | 1.155 | \<0.01  |
+| Credit Spread                | 0.012      | 0.008 | 0.017 | \<0.01  |
+| Debt to Assets Ratio         | 0.078      | 0.042 | 0.142 | \<0.01  |
+| Operating Profit Margin      | 0.303      | 0.189 | 0.483 | \<0.01  |
+| EBIDTA Margin                | 0.779      | 0.460 | 1.318 | 0.353   |
+| Return on Assets (ROA)       | 1.131      | 1.087 | 1.178 | \<0.01  |
+| Log of Market Capitalization | 2.960      | 2.635 | 3.330 | \<0.01  |
