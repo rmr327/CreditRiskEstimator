@@ -47,7 +47,10 @@ library(lmtest) # For likelihood ratio test
 # collapsing credit ratings
 bonds$BB_COMPOSITE <- ifelse(bonds$BB_COMPOSITE %in% c("AAA", "AA+", "AA", "AA-"), ">A+", bonds$BB_COMPOSITE)
 bonds$BB_COMPOSITE <- ifelse(bonds$BB_COMPOSITE %in% c('BB+', 'BBB-'), "<BBB", bonds$BB_COMPOSITE)
-bonds$BB_COMPOSITE <- factor(bonds$BB_COMPOSITE, levels = c('>A+', 'A+', 'A', 'A-', 'BBB+', 'BBB', '<BBB'))
+
+# Transform the 'bonds' column into an ordered factor
+bonds$BB_COMPOSITE <- ordered(bonds$BB_COMPOSITE, levels = c("<BBB", "BBB", "BBB+", "A-", "A", "A+",  ">A+"))
+
 ```
 
 ```{r echo=FALSE, results='hide'}
@@ -179,7 +182,7 @@ R-squared from model output is 0.674, which claims that 67.4% of the variation i
 
 |              |              |                  |                           |                  |
 |---------------|---------------|---------------|---------------|---------------|
-|              | Priori Model | Model (selected) | Cross Validation (Priori) | Cross Validation |
+|              | Priori Model | Model (selected) | Cross Validation (Priori) | Cross Validation |
 | RMSE         | 0.2818       | 0.2774           | 0.2863259                 | 0.2793178        |
 | R-squared    | 0.6725       | 0.674            | 0.6610463                 | 0.6639721        |
 | MAE          | NA           | NA               | 0.2033042                 | 0.1998454        |
@@ -273,11 +276,12 @@ In this section, we will delve into the outcomes derived from our research quest
 
 ##### Full Model
 
-A Priori variable selection was done to make the initial model. The A priori variables were selected based on our EDA and domain knowledge.
+A Priori variable selection was done to make the initial model. The A priori variables were selected based on our EDA and domain knowledge. One variable "Market Capitalization" underwent a log transformation. In financial contexts, it is common for the impact of large values to be disproportionately influential. For a metric like Market Capitalization, where a few companies might have extremely large values, taking the log helps to mitigate this effect, making the relationship between Market Capitalization and credit rating more interpretable. Below you can see a representation of our initial model.
 
-```{r}
+```{r, echo=FALSE, results='hide'}
 # full model
-ord_mod <- polr(BB_COMPOSITE ~ score + Duration + credit_spread + debt_to_assets + operating_profit_margin + ebitda_margin + roa + debt_to_equity, data=bonds, Hess=TRUE)
+bonds$roa <- bonds$roa * 100  # getting it in the percentage scale
+ord_mod <- polr(BB_COMPOSITE ~ score + Duration + credit_spread + debt_to_assets + operating_profit_margin + ebitda_margin + roa + debt_to_equity + log(marketCapitalization), data=bonds, Hess=TRUE)
 summary(ord_mod)
 ```
 
@@ -285,14 +289,14 @@ summary(ord_mod)
 
 With the goal of making the final model easier to interpret and understand, less susceptible to over-fitting, and increased generality , Likelihood Ratio Tests were performed to prune statistically insignificant predictors.
 
-```{r echo=FALSE, warning=FALSE, fig.width=10, fig.height=3}
+```{r echo=FALSE, results='hide'}
 # Assuming original_df is your original data frame
-df_r <- bonds[, c("BB_COMPOSITE", "score",  "Duration", "credit_spread", "debt_to_assets", "operating_profit_margin", "ebitda_margin", "roa")]
+df_r <- bonds[, c("BB_COMPOSITE", "score",  "Duration", "credit_spread", "debt_to_assets", "operating_profit_margin", "ebitda_margin", "roa", "marketCapitalization")]
 
 df_r <- na.omit(df_r)
 
 # Define the reduced model (without the variable to be tested)
-reduced_model <- polr(BB_COMPOSITE ~ score + Duration + credit_spread + debt_to_assets + operating_profit_margin + ebitda_margin + roa, data = df_r, Hess=TRUE)
+reduced_model <- polr(BB_COMPOSITE ~ score + Duration + credit_spread + debt_to_assets + operating_profit_margin + ebitda_margin + roa + log(marketCapitalization), data = df_r, Hess=TRUE)
 
 # Perform likelihood ratio test
 lr_test <- lrtest(ord_mod, reduced_model)
@@ -305,10 +309,22 @@ print(lr_test)
 
 | Log Liklihood | Df  | Chi-Square | Pr(\>Chi-Square) |
 |---------------|-----|------------|------------------|
-| -2383.1       | -1  | 0.1586     | 0.6904           |
+| -2300.8       | -1  | 0.3017     | 0.5828           |
 
-The table above shows the results of the only significant Likilihood Ratio test. The null hypothesis (H0) for this test is that removing **`debt to equity ratio`** does not significantly worsen the model fit. The chi-squared statistic is noted to be 0.1586 with 1 degree of freedom, resulting in a p-value of 0.6904. The p-value is noted to be greater than the typical significance level of 0.05, suggesting that there is not enough evidence to reject the null hypothesis. Therefore, based on the likelihood ratio test, removing the **`debt to equity rtatio`** variable does not significantly impact the model fit, and Model 2 may be preferred due to its simplicity. Therefore the `debt to equity ratio` was dropped from the model.
+The table above shows the results of the only significant Likilihood Ratio test. The null hypothesis (H0) for this test is that removing **`debt to equity ratio`** does not significantly worsen the model fit. The chi-squared statistic is noted to be 0.3017 with 1 degree of freedom, resulting in a p-value of 05828. The p-value is noted to be greater than the typical significance level of 0.05, suggesting that there is not enough evidence to reject the null hypothesis. Therefore, based on the likelihood ratio test, removing the **`debt to equity rtatio`** variable does not significantly impact the model fit, and Model 2 may be preferred due to its simplicity. Therefore the `debt to equity ratio` was dropped from the model.
 
 ##### Note on Interaction term
 
 Despite having identified Sector as a potential interaction term in our analysis plan, the interaction term was not included in the final model. The chosen interaction variable was introducing perfect separability in the model. The "Sector" variable was therefore dropped to address the numerical instability and convergence problems that can arise when estimating the model parameters. By removing the variable, we can avoid the situation where certain levels of the "Sector" variable perfectly predict specific credit score categories, making the model more stable and avoiding potential issues like infinite coefficients or standard errors.
+
+```{r echo=FALSE, results='hide'}
+pvals <- pnorm(-abs(summary(reduced_model)$coef[,"t value"]))*2
+ctable <- cbind(summary(reduced_model)$coef,pvals)
+
+print(ctable)
+
+exp_coefs <- exp(cbind(OR=coef(reduced_model),confint(reduced_model)))
+print(exp_coefs)
+```
+
+##### Model Assessment
