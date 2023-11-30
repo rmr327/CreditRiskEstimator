@@ -474,4 +474,14 @@ To check the overall performance of the final model, a confusion matrix shown in
 
 The table above answers our research question and shows us the statistical relationship between each of our predictor variables and credit rating of a company.
 
+Some of the most compelling relationships found are as follows.
+
+The model shows a high degree of correlation between Credit Spread and Credit Rating. Intuitively, the higher the credit spread for a certain bond, the more likely that the bond has a lower credit rating. As we can see from the table, keeping all else constant, increasing credit spread by 1 unit drops the odds of moving to the next higher rating by 98.8%. This confirms our initial intuition.
+
+The model shows a high degree of correlation between log of Market Capitalization and Credit Rating. Intuitively, larger market capitalization generally implies a larger and more stable company. In line with our intuintion, the final model suggests, keeping all else constant, increasing the log of Market Capitalization by on unit, leads to 196% increase in the odds of moving to the next higher credit rating.
+
+The final model shows a high degree of correlation between Debt to Asset ratio and Credit Rating. As the amount of debt that a company holds relative to the assets it holds increases, we would expect the company\'s riskiness to increase. Our model suggests that, keeping all else constant, for a 1 unit increase in the debt to assets ratio, the odds of moving to the next higher category decreases by 92.2%.
+
+According to the final model, Sentiment Score and EBIDTA Margin were not statistically significant predictors for credit rating. This was concluded due to their p-values being above the chosen significance level of 0.05.
+
 Investors often rely on credit ratings to assess the creditworthiness of companies before making investment decisions. The insights gained from these results can guide investors in evaluating the risk associated with companies' financial profiles, helping them make more informed and prudent investment choices.
