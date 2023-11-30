@@ -39,6 +39,7 @@ library(car)
 suppressMessages(library(tidyverse))
 library(MASS)
 library(lmtest) # For likelihood ratio test
+library(nnet) # package for multinomial model
 ```
 
 ## Data Cleaning
@@ -272,7 +273,7 @@ plot(credit_spread)
 
 In this section, we will delve into the outcomes derived from our research question 2. Recall that research question 2 is: "What factors influence a company's credit rating?" The goal of this analysis is to find out which factors contribute to the credit rating of a company. This analysis is based on a subset of the data described in the data overview section. The number of observations are relatively evenly separated into7 ordered categories of credit ratings. Therefore, a Ordinal Logistic Regression model is used to answer the research question.
 
-## Modeling
+#### Modeling
 
 ##### Full Model
 
@@ -317,7 +318,7 @@ The table above shows the results of the only significant Likilihood Ratio test.
 
 Despite having identified Sector as a potential interaction term in our analysis plan, the interaction term was not included in the final model. The chosen interaction variable was introducing perfect separability in the model. The "Sector" variable was therefore dropped to address the numerical instability and convergence problems that can arise when estimating the model parameters. By removing the variable, we can avoid the situation where certain levels of the "Sector" variable perfectly predict specific credit score categories, making the model more stable and avoiding potential issues like infinite coefficients or standard errors.
 
-```{r echo=FALSE, results='hide'}
+```{r echo=FALSE, results='hide', warning=FALSE, message=FALSE}
 pvals <- pnorm(-abs(summary(reduced_model)$coef[,"t value"]))*2
 ctable <- cbind(summary(reduced_model)$coef,pvals)
 
@@ -328,3 +329,127 @@ print(exp_coefs)
 ```
 
 ##### Model Assessment
+
+To evaluate the validity of the model, our team conducted a thorough examination, mirroring the assumption verification steps employed for research question 1. This scrutiny revealed that none of the conditions were violated. Below you can see the results to assess the final model's multicollinearity, proportional odds assumption and overall performance.
+
+```{r echo=FALSE, results='hide'}
+vif(reduced_model)
+```
+
+*Table 4) Variance Inflation Factors (VIF) for the final model*
+
+| Predictor                    | VIF  |
+|------------------------------|------|
+| Sentiment Score              | 1.15 |
+| Duration                     | 1.26 |
+| Credit Spread                | 1.31 |
+| Debt to Assets               | 1.09 |
+| Operating Profit Margin      | 1.23 |
+| EBIDTA Margin                | 1.38 |
+| Return on Assets (ROA)       | 1.55 |
+| Log of Market Capitalization | 1.19 |
+
+In general, VIF values around 1 indicate low multicollinearity, and values above 5 or 10 are often considered concerning. The results from the table above suggest that the predictors in our final model are not highly correlated with each other.
+
+```{r echo=FALSE, results='hide'}
+# using multinomial logistic regression
+mult_mod <- multinom(BB_COMPOSITE ~ 
+                       score + 
+                       Duration + 
+                       credit_spread + 
+                       debt_to_assets + 
+                       operating_profit_margin + 
+                       ebitda_margin + 
+                       roa + log(marketCapitalization), 
+                     data = df_r)
+
+new.data <- df_r[sample(nrow(df_r)), ]
+new.data <- head(df_r, 10)
+
+predict(mult_mod, new.data, type="probs")
+# using ordinal regression
+predict(reduced_model, new.data, type="probs")
+```
+
+```{r echo=FALSE, results='hide', results='asis'}
+# Your table data
+table_data <- matrix(c(
+  0.2242139, 0.6051642, 0.14030691, 0.02792946, 0.0023849073, 6.416369e-07, 3.674757e-08,
+  0.2437800, 0.5567623, 0.15654999, 0.03867288, 0.0042330414, 1.674667e-06, 1.713898e-07,
+  0.1439689, 0.3666926, 0.27248873, 0.16293009, 0.0537281156, 1.081668e-04, 8.337934e-05,
+  0.2990506, 0.5868950, 0.09780077, 0.01531411, 0.0009392902, 1.596220e-07, 6.019318e-09,
+  0.4084235, 0.4128777, 0.13009476, 0.04256727, 0.0060319564, 3.800697e-06, 1.084274e-06,
+  0.1187189, 0.3321557, 0.28483547, 0.19080054, 0.0731312892, 1.823555e-04, 1.757606e-04,
+  0.1940544, 0.4869222, 0.22032010, 0.08316607, 0.0155202451, 1.343427e-05, 3.553851e-06,
+  0.1538599, 0.4069585, 0.26338607, 0.13731238, 0.0383897519, 6.025239e-05, 3.313163e-05,
+  0.1684379, 0.4240143, 0.25266586, 0.12324631, 0.0315709108, 4.372969e-05, 2.104435e-05,
+  0.2225623, 0.3981325, 0.23057913, 0.11784309, 0.0308088782, 4.552338e-05, 2.850320e-05
+), ncol = 7, byrow = TRUE)
+
+# Create a data frame from the matrix with updated column names
+column_names <- c("<BBB", "BBB", "BBB+", "A-", "A", "A+", ">A+")
+colnames(table_data) <- column_names
+table_df <- as.data.frame(table_data)
+table_df <- as.data.frame(round(table_data, 3))
+
+# Print the table
+knitr::kable(table_df, caption = "Predicted Probabilities for Each Category (Multinomial Regression)")
+
+```
+
+```{r echo=FALSE, results='hide', results='asis'}
+# Your table data
+table_data <- matrix(c(
+  0.08011782, 0.6506046, 0.1850589, 0.05810348, 0.02100391, 0.003772451, 0.0013388737,
+  0.06255257, 0.6126661, 0.2176088, 0.07335475, 0.02715647, 0.004914369, 0.0017468711,
+  0.01697703, 0.3328651, 0.3333188, 0.19771491, 0.09386911, 0.018539347, 0.0067157405,
+  0.12146447, 0.6901299, 0.1336453, 0.03814844, 0.01338588, 0.002382144, 0.0008438434,
+  0.05430691, 0.5871680, 0.2361191, 0.08332501, 0.03134917, 0.005702561, 0.0020292303,
+  0.01394272, 0.2918806, 0.3325592, 0.21985947, 0.11108338, 0.022484361, 0.0081903310,
+  0.03327161, 0.4841775, 0.2937613, 0.12524190, 0.05071325, 0.009453174, 0.0033812564,
+  0.02048938, 0.3740887, 0.3285359, 0.17644867, 0.07949408, 0.015392129, 0.0055511284,
+  0.02293579, 0.3994918, 0.3231672, 0.16391533, 0.07178464, 0.013755675, 0.0049496319,
+  0.02391952, 0.4090337, 0.3207121, 0.15932222, 0.06908037, 0.013189799, 0.0047422792
+), ncol = 7, byrow = TRUE)
+
+# Create a data frame from the matrix with updated column names
+column_names <- c("<BBB", "BBB", "BBB+", "A-", "A", "A+", ">A+")
+colnames(table_data) <- column_names
+table_df <- as.data.frame(round(table_data, 3))
+
+# Print the table
+knitr::kable(table_df, caption = "Predicted Probabilities for Each Category (Ordinal Regression)")
+
+```
+
+To check the proportional odds assumption the group fit a multinational logistic regression model with the same variables as the final ordinal regression model. The two tables above show predictions from each of the models, on 10 randomly selected observations from out data set. The predicted probabilities for all the categories were similar enough to conclude that the proportional odds assumption was not violated.
+
+```{r echo=FALSE, results='asis'}
+df_filtered <- df_r
+df_filtered <- na.omit(df_filtered)
+conf_matrix <- confusionMatrix(predict(ord_mod), na.omit(df_filtered)$BB_COMPOSITE, mode = 'everything')
+
+# Assuming conf_matrix is your confusion matrix object
+library(ggplot2)
+
+conf_matrix_df <- as.data.frame(as.table(conf_matrix$table))
+
+ggplot(conf_matrix_df, aes(x = Reference, y = Prediction, label = Freq)) +
+  geom_tile(aes(fill = Freq), color = "white") +
+  geom_text(color = "black") +
+  scale_fill_gradient(low = "lightblue", high = "darkblue") +
+  theme_minimal() +
+  labs(title = "Figure 3: Confusion Matrix for Final Ordinal Model")
+
+```
+
+*Table 8: Overall Performance Statistics from the final model*
+
+| Metric                  | Score            |
+|-------------------------|------------------|
+| Accuracy                | 53.23%           |
+| 95% Confidence Interval | 50.98% to 55.46% |
+| Kappa                   | 0.4047           |
+| No Information Rate     | 33.61 %          |
+
+To check the overall performance of the final model, a confusion matrix shown in the figure above was produced. The overall statistics from the confusion matrx is showed in the table table above. The overall accuracy indicates that the model correctly predicted the credit ratings for approximately 53.23% of the observations. The Kappa statistic measures the agreement between the predicted and actual ratings, considering the agreement occurring by chance. A Kappa value of 0.4047 suggests a moderate level of agreement beyond chance. The No Information Rate represents the accuracy achieved by always predicting the most frequent class. The model outperforms this baseline accuracy significantly. In summary, the model demonstrates a moderate level of accuracy and agreement, outperforming a baseline approach that predicts the most frequent class.
