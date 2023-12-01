@@ -50,33 +50,17 @@ library(nnet) # package for multinomial model
 
 ## Methodology
 
+### Data Overview
+
+Our approach will consist on leveraging our domain knowledge along with some key data exploration to select the most appropriate variables for our model.
+
+For continuous variables, we can use scatter plots to try and assess whether relationships exist between our outcome variable and the predictors.
+
+For categorical/ordinal variables we can use histograms and boxplots to aid us in assessing whether each predictor has a clear relationship with our outcome variables.
+
 ### Data Cleaning
 
 Given the different accounting practices of the different kinds of businesses in each of the Sectors in our universe, there are bound to be many (often very concentrated) NAs. Our approach consists in exploring the nature of those NAs to determine if those values should be removed, replaced or handled in any other way.
-
-There is a multitude of categories in Credit Ratings and Sector, with some having minimal data. This situation could lead to high standard errors and adversely affect the quality of our model. We collapsed the four highest ratings: AAA, AA+, AA & AA- into a single category called \>A+. Additionally, we collapsed the two lowest: BB+ and BBB- into \<BBB.
-
-Finally, we collapsed some Sectors which had very few observations: Brokerage/Asset Managers/Exchanges and Reit were collapsed into Finance; Natural Gas and Electric were collapsed into Energy; Transportation was collapsed into Communications.
-
-### Exploratory Data Analysis
-
-We performed some a priori EDA in order to adequately select the variables that show a relationship with the outcome of interest.
-
-```{r, warning=FALSE, message=FALSE, fig.width=9, fig.height=3}
-plot1 <- ggplot(subset(bonds, BB_COMPOSITE %in% c('A-', 'BBB+', 'BBB')), aes(x = Duration, y = credit_spread)) +
-  geom_point() +
-  labs(x = 'Duration', y = 'Credit spread (%)', title = 'Credit spread vs Duration', subtitle = 'How does interest rate risk affect credit spread?')
-plot2 <- ggplot(bonds, aes(x = BB_COMPOSITE, y = score)) +
-  geom_boxplot() +
-  labs(x = 'Credit rating', y = 'Sentiment score', title = 'Sentiment score vs Credit rating', subtitle = 'What is the market\'s appetite for risk?')
-grid.arrange(plot1, plot2, ncol = 2)
-```
-
-Contrary to what domain knowledge would suggest, we found a few variables that didn't seem to have a clear relationship with our outcome variables:
-
--   **Coverage ratios:** EDA suggests that the coverage ratios show no meaningful relationship with our outcome variables in addition to containing a large amount of NAs. The reason for this could be the different accounting practices and the different nature of the businesses in our universe. Since these predictors will surely result in added variance and noise, they have been removed from our model.
-
--   **Liquidity ratios:** Once again, different accounting practices cause several NAs in our data. This lead to results that suggest that no meaningful relationship exists between these ratios and our outcome variables in addition to many relevant rows being dropped. These predictors were removed from our model.
 
 ### Research Question 1
 
@@ -112,7 +96,36 @@ To assess the validity of the final model, .....
 
 ## Model Results and Discussion
 
-### Data Cleaning
+### Exploratory Data Analysis
+
+We have two outcome variables:
+
+-   The `Credit Rating` is an ordinal categorical variable, and represents an equally weighted blend of the ratings of a security by Moody's, S&P, Fitch, and DBRS as published by Bloomberg
+
+-   The `Credit Spread` is a continuous outcome variable and represents the difference in yield or interest rate between a particular bond and a benchmark US Treasury bond.
+
+```{r, warning=FALSE, message=FALSE, fig.width=9, fig.height=3}
+#| echo: false
+bonds$BB_COMPOSITE <- factor(bonds$BB_COMPOSITE, levels = c('AAA', 'AA+', 'AA', 'AA-', 'A+', 'A', 'A-', 'BBB+', 'BBB', 'BBB-', 'BB+'))
+plot_1 <- ggplot(bonds, aes(x = factor(BB_COMPOSITE), fill = BB_COMPOSITE)) +
+  geom_bar() +
+  labs(x = "Bloomberg Composite Credit Rating", y = "Frequency", title = "Histogram of Credit Rating") +
+  theme_minimal() +
+  theme(axis.text.x = element_blank())  # Remove x-axis ticks
+
+# Create the histogram plot
+plot_2 <- ggplot(bonds, aes(x = credit_spread)) +
+  geom_histogram(binwidth = 0.2, fill = "skyblue", color = "black") +
+  labs(x = "Credit Spread", y = NULL, 
+       title = "Histogram of Credit Spread") +
+  theme_minimal()
+
+grid.arrange(plot_1, plot_2, ncol = 2)
+```
+
+There is a multitude of categories in Credit Ratings and Sector, with some having minimal data. This situation could lead to high standard errors and adversely affect the quality of our model. We collapsed the four highest ratings: AAA, AA+, AA & AA- into a single category called \>A+. Additionally, we collapsed the two lowest: BB+ and BBB- into \<BBB.
+
+Finally, we collapsed some Sectors which had very few observations: Brokerage/Asset Managers/Exchanges and Reit were collapsed into Finance; Natural Gas and Electric were collapsed into Energy; Transportation was collapsed into Communications.
 
 ```{r echo=FALSE, results='hide'}
 # collapsing credit ratings
@@ -133,27 +146,31 @@ bonds$Sector <- ifelse(bonds$Sector == "Reits", "Finance", bonds$Sector)
 bonds$Sector <- ifelse(bonds$Sector == "Transportation", "Communications", bonds$Sector)
 ```
 
+We performed some a priori EDA along with some prior domain knowledge in order to adequately select the variables that show a relationship with the outcome of interest.
+
+```{r, warning=FALSE, message=FALSE, fig.width=9, fig.height=3}
+plot1 <- ggplot(subset(bonds, BB_COMPOSITE %in% c('A-', 'BBB+', 'BBB')), aes(x = Duration, y = credit_spread)) +
+  geom_point() +
+  facet_wrap(~ BB_COMPOSITE) +
+  geom_smooth(method = 'lm', se = F) +
+  labs(x = 'Duration', y = 'Credit spread (%)', title = 'Credit spread vs Duration', subtitle = 'How does interest rate risk affect credit spread?')
+plot2 <- ggplot(bonds, aes(x = BB_COMPOSITE, y = score)) +
+  geom_boxplot() +
+  labs(x = 'Credit rating', y = 'Sentiment score', title = 'Sentiment score vs Credit rating', subtitle = 'What is the market\'s appetite for risk?')
+grid.arrange(plot1, plot2, ncol = 2)
+```
+
+Contrary to what domain knowledge would suggest, we found a few variables that didn't seem to have a clear relationship with our outcome variables:
+
+-   **Coverage ratios:** EDA suggests that the coverage ratios show no meaningful relationship with our outcome variables in addition to containing a large amount of NAs. The reason for this could be the different accounting practices and the different nature of the businesses in our universe. Since these predictors will surely result in added variance and noise, they have been removed from our model.
+
+-   **Liquidity ratios:** Once again, different accounting practices cause several NAs in our data. This lead to results that suggest that no meaningful relationship exists between these ratios and our outcome variables in addition to many relevant rows being dropped. These predictors were removed from our model.
+
+To conclude our EDA, we found that the Market capitalization variable seemed to have a non-linear relationship with our outcome and therefore could benefit from a log-transformation.
+
 ```{r echo=FALSE, results='hide'}
 #log transformation of market capitalization since it is right-skewed
 bonds$marketCapitalization_new <- log(bonds$marketCapitalization)
-```
-
-### Exploratory Data Analysis
-
-Credit Spread vs Credit Rating (BB Composite)
-
-```{r echo=FALSE, results='hide'}
-#correlation between credit rating vs credit spread
-figure_1 <- ggplot(bonds, aes(x = BB_COMPOSITE, y = credit_spread)) + 
-  geom_boxplot() +
-  theme_minimal() +
-  labs(title = "Figure 1: Box Plot of Credit Rating vs Credit Spread",
-       x = "BB Composite Category",
-       y = "Credit Spread")
-```
-
-```{r echo=FALSE, results='hide'}
-figure_1
 ```
 
 ### Research Question 1
