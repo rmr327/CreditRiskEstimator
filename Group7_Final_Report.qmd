@@ -1,8 +1,4 @@
----
-title: "Final_Report_new"
-format: pdf
-editor: visual
----
+## 
 
 ---
 title: "Group7_Final_Report"
@@ -10,6 +6,8 @@ author: "Kelly Tong, Rakeen Rouf, Lisa Wang, Javier Cervantes"
 format: pdf
 editor: visual
 ---
+
+## Abstract
 
 ## Introduction
 
@@ -48,7 +46,51 @@ library(lmtest) # For likelihood ratio test
 library(nnet) # package for multinomial model
 ```
 
-## Data Cleaning
+## Methodology
+
+### Data Cleaning
+
+...
+
+### Exploratory Data Analysis
+
+...
+
+### Research Question 1
+
+......
+
+##### Technique
+
+.....
+
+##### Assumptions
+
+.....
+
+### Assessments
+
+.....
+
+### Research Question 2
+
+This section will discuss the methodology for answer our research question 1. Recall that research question 2 is: "What factors influence a company's credit rating?"
+
+##### Technique
+
+Given the ordinal nature of the outcome variable (Bloomberg Composite Credit Ratings), Ordinal Logistic Regression was chosen to answer the research question. Ordinal logistic regression is a statistical model used to analyze ordinal data, which is categorical data with an ordered ranking. Unlike nominal logistic regression, which is used for un-ordered categorical data, ordinal logistic regression takes into account the ordering of the categories.
+
+##### Assumptions
+
+The assumptions for Ordinal Logistic Regression is very similar the Linear Regression model from research question 1, with the added assumption of Proportional Odds. The Proportional Odds assumption demands that the relationship between the predictors and the odds of being in a higher category is constant across all levels of the dependent variable.
+
+##### Assessments
+
+To assess the validity of the final model, .....
+
+## Model Results and Discussion
+
+### Data Cleaning
 
 ```{r echo=FALSE, results='hide'}
 # collapsing credit ratings
@@ -74,13 +116,7 @@ bonds$Sector <- ifelse(bonds$Sector == "Transportation", "Communications", bonds
 bonds$marketCapitalization_new <- log(bonds$marketCapitalization)
 ```
 
-Influential Points (Cook's Distance)
-
-(code for cook's distance and plot)
-
-Missing Values
-
-## Data Exploration
+### Exploratory Data Analysis
 
 Credit Spread vs Credit Rating (BB Composite)
 
@@ -97,28 +133,6 @@ figure_1 <- ggplot(bonds, aes(x = BB_COMPOSITE, y = credit_spread)) +
 ```{r echo=FALSE, results='hide'}
 figure_1
 ```
-
-## Methodology
-
-### Research Question 1
-
-### Research Question 2
-
-This section will discuss the methodology for answer our research question 1. Recall that research question 2 is: "What factors influence a company's credit rating?"
-
-##### Technique
-
-Given the ordinal nature of the outcome variable (Bloomberg Composite Credit Ratings), Ordinal Logistic Regression was chosen to answer the research question. Ordinal logistic regression is a statistical model used to analyze ordinal data, which is categorical data with an ordered ranking. Unlike nominal logistic regression, which is used for un-ordered categorical data, ordinal logistic regression takes into account the ordering of the categories.
-
-##### Assumptions
-
-The assumptions for Ordinal Logistic Regression is very similar the Linear Regression model from research question 1, with the added assumption of Proportional Odds. The Proportional Odds assumption demands that the relationship between the predictors and the odds of being in a higher category is constant across all levels of the dependent variable.
-
-##### Assessments
-
-To assess the validity of the final model, .....
-
-## Model Results and Discussion
 
 ### Research Question 1
 
@@ -257,7 +271,7 @@ print(vif_model)
 *Table C: VIF Output and GVIF Values*
 
 |        Variables        |     GVIF     | Degree of freedom | **GVIF\^(1/(2\*Df))** |
-|:------------------:|:----------------:|:----------------:|:----------------:|
+|:-----------------:|:----------------:|:----------------:|:----------------:|
 |         Sector          | 2.182726e+01 |        26         |       1.061085        |
 |        Duration         | 1.055998e+00 |         1         |       1.027618        |
 |  Market Capitalization  | 2.762059e+00 |         1         |       1.661944        |
@@ -320,7 +334,7 @@ print(lr_test)
 |---------------|-----|------------|------------------|
 | -2300.8       | -1  | 0.3017     | 0.5828           |
 
-The table above shows the results of the only significant Likilihood Ratio test. The null hypothesis (H0) for this test is that removing **`debt to equity ratio`** does not significantly worsen the model fit. The chi-squared statistic is noted to be 0.3017 with 1 degree of freedom, resulting in a p-value of 05828. The p-value is noted to be greater than the typical significance level of 0.05, suggesting that there is not enough evidence to reject the null hypothesis. Therefore, based on the likelihood ratio test, removing the **`debt to equity rtatio`** variable does not significantly impact the model fit, and Model 2 may be preferred due to its simplicity. Therefore the `debt to equity ratio` was dropped from the model.
+The table above shows the results of the only significant Likilihood Ratio test. The null hypothesis (H0) for this test is that removing **`debt to equity ratio`** does not significantly worsen the model fit. The chi-squared statistic is noted to be 0.3017 with 1 degree of freedom, resulting in a p-value of 0.5828. The p-value is noted to be greater than the typical significance level of 0.05, suggesting that there is not enough evidence to reject the null hypothesis. Therefore, based on the likelihood ratio test, removing the **`debt to equity rtatio`** variable does not significantly impact the model fit, and Model 2 may be preferred due to its simplicity. Therefore the `debt to equity ratio` was dropped from the model.
 
 ##### Note on Interaction term
 
@@ -493,3 +507,7 @@ The final model shows a high degree of correlation between Debt to Asset ratio a
 According to the final model, Sentiment Score and EBIDTA Margin were not statistically significant predictors for credit rating. This was concluded due to their p-values being above the chosen significance level of 0.05.
 
 Investors often rely on credit ratings to assess the creditworthiness of companies before making investment decisions. The insights gained from these results can guide investors in evaluating the risk associated with companies' financial profiles, helping them make more informed and prudent investment choices.
+
+## Conclusion
+
+...
