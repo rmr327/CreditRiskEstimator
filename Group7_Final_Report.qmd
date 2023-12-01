@@ -227,7 +227,7 @@ summary(credit_spread)
 Table A: Credit Spread Selected Variable Linear Regression Model Output (Partial)
 
 |                             |                           |                    |             |             |
-|---------------|---------------|---------------|---------------|---------------|
+|-----------------------------|---------------------------|--------------------|-------------|-------------|
 | **Variables**               | **Estimated Coefficient** | **Standard Error** | **t-Value** | **p-Value** |
 | Duration                    | 0.0285684                 | 0.0013259          | 21.547      | \< 2e-16    |
 | Market Capitalization (new) | -0.1175721                | 0.0097427          | -12.068     | \< 2e-16    |
@@ -245,7 +245,7 @@ R-squared from model output is 0.6965, which claims that 69.65% of the variation
 *Table B: Cross Validation and Model Matrices*
 
 |              |              |                  |                          |                             |
-|---------------|---------------|---------------|---------------|---------------|
+|--------------|--------------|------------------|--------------------------|-----------------------------|
 |              | Priori Model | Model (selected) | Cross Validation(Priori) | Cross Validation (selected) |
 | RMSE         | 0.2818       | 0.2676           | 0.2863259                | 0.269756                    |
 | R-squared    | 0.6725       | 0.6965           | 0.6610463                | 0.6860763                   |
@@ -312,7 +312,7 @@ print(vif_model)
 *Table C: VIF Output and GVIF Values*
 
 |        Variables        |     GVIF     | Degree of freedom | **GVIF\^(1/(2\*Df))** |
-|:-----------------:|:----------------:|:----------------:|:----------------:|
+|:-----------------------:|:------------:|:-----------------:|:---------------------:|
 |         Sector          | 2.182726e+01 |        26         |       1.061085        |
 |        Duration         | 1.055998e+00 |         1         |       1.027618        |
 |  Market Capitalization  | 2.762059e+00 |         1         |       1.661944        |
