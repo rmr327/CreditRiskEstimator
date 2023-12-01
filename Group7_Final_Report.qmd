@@ -52,11 +52,31 @@ library(nnet) # package for multinomial model
 
 ### Data Cleaning
 
-...
+Given the different accounting practices of the different kinds of businesses in each of the Sectors in our universe, there are bound to be many (often very concentrated) NAs. Our approach consists in exploring the nature of those NAs to determine if those values should be removed, replaced or handled in any other way.
+
+There is a multitude of categories in Credit Ratings and Sector, with some having minimal data. This situation could lead to high standard errors and adversely affect the quality of our model. We collapsed the four highest ratings: AAA, AA+, AA & AA- into a single category called \>A+. Additionally, we collapsed the two lowest: BB+ and BBB- into \<BBB.
+
+Finally, we collapsed some Sectors which had very few observations: Brokerage/Asset Managers/Exchanges and Reit were collapsed into Finance; Natural Gas and Electric were collapsed into Energy; Transportation was collapsed into Communications.
 
 ### Exploratory Data Analysis
 
-...
+We performed some a priori EDA in order to adequately select the variables that show a relationship with the outcome of interest.
+
+```{r, warning=FALSE, message=FALSE, fig.width=9, fig.height=3}
+plot1 <- ggplot(subset(bonds, BB_COMPOSITE %in% c('A-', 'BBB+', 'BBB')), aes(x = Duration, y = credit_spread)) +
+  geom_point() +
+  labs(x = 'Duration', y = 'Credit spread (%)', title = 'Credit spread vs Duration', subtitle = 'How does interest rate risk affect credit spread?')
+plot2 <- ggplot(bonds, aes(x = BB_COMPOSITE, y = score)) +
+  geom_boxplot() +
+  labs(x = 'Credit rating', y = 'Sentiment score', title = 'Sentiment score vs Credit rating', subtitle = 'What is the market\'s appetite for risk?')
+grid.arrange(plot1, plot2, ncol = 2)
+```
+
+Contrary to what domain knowledge would suggest, we found a few variables that didn't seem to have a clear relationship with our outcome variables:
+
+-   **Coverage ratios:** EDA suggests that the coverage ratios show no meaningful relationship with our outcome variables in addition to containing a large amount of NAs. The reason for this could be the different accounting practices and the different nature of the businesses in our universe. Since these predictors will surely result in added variance and noise, they have been removed from our model.
+
+-   **Liquidity ratios:** Once again, different accounting practices cause several NAs in our data. This lead to results that suggest that no meaningful relationship exists between these ratios and our outcome variables in addition to many relevant rows being dropped. These predictors were removed from our model.
 
 ### Research Question 1
 
