@@ -9,7 +9,9 @@ editor: visual
 
 ## Abstract
 
-...
+From individuals to the largest corporations in the world: adequately assessing and managing credit risk is paramount. We seek to understand what components make up credit risk to gain a better understanding on how to manage it. Our data consists of several bonds from publicly listed companies and contains predictors that include company fundamentals and sentiment indicators.
+
+\*\* add some key results
 
 ## Introduction
 
