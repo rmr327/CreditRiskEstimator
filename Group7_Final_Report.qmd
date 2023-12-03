@@ -113,7 +113,7 @@ For Research Question 2, focused on understanding the factors influencing a comp
 
 #### Assumptions
 
-The assumptions for Ordinal Logistic Regression are Linearity, Independence, f Proportional Odds. The Proportional Odds assumption demands that the relationship between the predictors and the odds of being in a higher category is constant across all levels of the dependent variable. The assumptions was carefully evaluated to ensure the model's reliability.
+The assumptions for Ordinal Logistic Regression are Linearity, Independence, and Proportional Odds. The Proportional Odds assumption demands that the relationship between the predictors and the odds of being in a higher category is constant across all levels of the dependent variable. The assumptions was carefully evaluated to ensure the model's reliability.
 
 #### Assessments
 
