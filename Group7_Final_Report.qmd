@@ -113,7 +113,7 @@ For Research Question 2, focused on understanding the factors influencing a comp
 
 #### Assumptions
 
-The assumptions for Ordinal Logistic Regression is very similar the Linear Regression model from research question 1, with the added assumption of Proportional Odds. The Proportional Odds assumption demands that the relationship between the predictors and the odds of being in a higher category is constant across all levels of the dependent variable. The assumptions was carefully evaluated to ensure the model's reliability.
+The assumptions for Ordinal Logistic Regression are Linearity, Independence, and Proportional Odds. The Proportional Odds assumption demands that the relationship between the predictors and the odds of being in a higher category is constant across all levels of the dependent variable. The assumptions was carefully evaluated to ensure the model's reliability.
 
 #### Assessments
 
@@ -260,7 +260,7 @@ summary(credit_spread)
 Table A: Credit Spread Selected Variable Linear Regression Model Output (Partial)
 
 |                             |                           |                    |             |             |
-|-----------------------------|---------------------------|--------------------|-------------|-------------|
+|----------------|---------------|--------------|--------------|--------------|
 | **Variables**               | **Estimated Coefficient** | **Standard Error** | **t-Value** | **p-Value** |
 | Duration                    | 0.0285684                 | 0.0013259          | 21.547      | \< 2e-16    |
 | Market Capitalization (new) | -0.1175721                | 0.0097427          | -12.068     | \< 2e-16    |
@@ -278,7 +278,7 @@ R-squared from model output is 0.6965, which claims that 69.65% of the variation
 *Table B: Cross Validation and Model Matrices*
 
 |              |              |                  |                          |                             |
-|--------------|--------------|------------------|--------------------------|-----------------------------|
+|--------------|--------------|--------------|---------------|----------------|
 |              | Priori Model | Model (selected) | Cross Validation(Priori) | Cross Validation (selected) |
 | RMSE         | 0.2818       | 0.2676           | 0.2863259                | 0.269756                    |
 | R-squared    | 0.6725       | 0.6965           | 0.6610463                | 0.6860763                   |
@@ -345,7 +345,7 @@ print(vif_model)
 *Table C: VIF Output and GVIF Values*
 
 |        Variables        |     GVIF     | Degree of freedom | **GVIF\^(1/(2\*Df))** |
-|:-----------------------:|:------------:|:-----------------:|:---------------------:|
+|:-------------------:|:---------------:|:---------------:|:-----------------:|
 |         Sector          | 2.182726e+01 |        26         |       1.061085        |
 |        Duration         | 1.055998e+00 |         1         |       1.027618        |
 |  Market Capitalization  | 2.762059e+00 |         1         |       1.661944        |
@@ -384,7 +384,7 @@ summary(ord_mod)
 
 ##### Reduced Model
 
-With the goal of making the final model easier to interpret and understand, less susceptible to over-fitting, and increased generality , Likelihood Ratio Tests were performed to prune statistically insignificant predictors.
+With the goal of making the final model easier to interpret and understand, less susceptible to over-fitting, and increased generality , Likelihood Ratio Tests were performed to prune statistically insignificant predictors. If the p-value from the liklihood ratio test is more than the chosen significance level, the null hypothesis may not be rejected.
 
 ```{r echo=FALSE, results='hide'}
 # Assuming original_df is your original data frame
@@ -408,7 +408,7 @@ print(lr_test)
 |---------------|-----|------------|------------------|
 | -2300.8       | -1  | 0.3017     | 0.5828           |
 
-The table above shows the results of the only significant Likilihood Ratio test. The null hypothesis (H0) for this test is that removing **`debt to equity ratio`** does not significantly worsen the model fit. The chi-squared statistic is noted to be 0.3017 with 1 degree of freedom, resulting in a p-value of 0.5828. The p-value is noted to be greater than the typical significance level of 0.05, suggesting that there is not enough evidence to reject the null hypothesis. Therefore, based on the likelihood ratio test, removing the **`debt to equity rtatio`** variable does not significantly impact the model fit, and Model 2 may be preferred due to its simplicity. Therefore the `debt to equity ratio` was dropped from the model.
+The table above shows the results of the only significant Likilihood Ratio test. The null hypothesis (H0) for this test is that adding **`debt to equity ratio`** does not significantly improve the model fit. The chi-squared statistic is noted to be 0.3017 with 1 degree of freedom, resulting in a p-value of 0.5828. The p-value is noted to be greater than the typical significance level of 0.05, suggesting that there is not enough evidence to reject the null hypothesis. Therefore, based on the likelihood ratio test, removing the **`debt to equity rtatio`** variable does not have a relevant impact on model fit, and Model 2 may be preferred due to its simplicity. Therefore the `debt to equity ratio` was dropped from the model.
 
 ##### Note on Interaction term
 
@@ -467,58 +467,13 @@ predict(mult_mod, new.data, type="probs")
 predict(reduced_model, new.data, type="probs")
 ```
 
-```{r echo=FALSE, results='hide', results='asis'}
-# Your table data
-table_data <- matrix(c(
-  0.2242139, 0.6051642, 0.14030691, 0.02792946, 0.0023849073, 6.416369e-07, 3.674757e-08,
-  0.2437800, 0.5567623, 0.15654999, 0.03867288, 0.0042330414, 1.674667e-06, 1.713898e-07,
-  0.1439689, 0.3666926, 0.27248873, 0.16293009, 0.0537281156, 1.081668e-04, 8.337934e-05,
-  0.2990506, 0.5868950, 0.09780077, 0.01531411, 0.0009392902, 1.596220e-07, 6.019318e-09,
-  0.4084235, 0.4128777, 0.13009476, 0.04256727, 0.0060319564, 3.800697e-06, 1.084274e-06,
-  0.1187189, 0.3321557, 0.28483547, 0.19080054, 0.0731312892, 1.823555e-04, 1.757606e-04,
-  0.1940544, 0.4869222, 0.22032010, 0.08316607, 0.0155202451, 1.343427e-05, 3.553851e-06,
-  0.1538599, 0.4069585, 0.26338607, 0.13731238, 0.0383897519, 6.025239e-05, 3.313163e-05,
-  0.1684379, 0.4240143, 0.25266586, 0.12324631, 0.0315709108, 4.372969e-05, 2.104435e-05,
-  0.2225623, 0.3981325, 0.23057913, 0.11784309, 0.0308088782, 4.552338e-05, 2.850320e-05
-), ncol = 7, byrow = TRUE)
-
-# Create a data frame from the matrix with updated column names
-column_names <- c("<BBB", "BBB", "BBB+", "A-", "A", "A+", ">A+")
-colnames(table_data) <- column_names
-table_df <- as.data.frame(table_data)
-table_df <- as.data.frame(round(table_data, 3))
-
-# Print the table
-knitr::kable(table_df, caption = "Predicted Probabilities for Each Category (Multinomial Regression)")
-
+```{}
 ```
 
-```{r echo=FALSE, results='hide', results='asis'}
-# Your table data
-table_data <- matrix(c(
-  0.08011782, 0.6506046, 0.1850589, 0.05810348, 0.02100391, 0.003772451, 0.0013388737,
-  0.06255257, 0.6126661, 0.2176088, 0.07335475, 0.02715647, 0.004914369, 0.0017468711,
-  0.01697703, 0.3328651, 0.3333188, 0.19771491, 0.09386911, 0.018539347, 0.0067157405,
-  0.12146447, 0.6901299, 0.1336453, 0.03814844, 0.01338588, 0.002382144, 0.0008438434,
-  0.05430691, 0.5871680, 0.2361191, 0.08332501, 0.03134917, 0.005702561, 0.0020292303,
-  0.01394272, 0.2918806, 0.3325592, 0.21985947, 0.11108338, 0.022484361, 0.0081903310,
-  0.03327161, 0.4841775, 0.2937613, 0.12524190, 0.05071325, 0.009453174, 0.0033812564,
-  0.02048938, 0.3740887, 0.3285359, 0.17644867, 0.07949408, 0.015392129, 0.0055511284,
-  0.02293579, 0.3994918, 0.3231672, 0.16391533, 0.07178464, 0.013755675, 0.0049496319,
-  0.02391952, 0.4090337, 0.3207121, 0.15932222, 0.06908037, 0.013189799, 0.0047422792
-), ncol = 7, byrow = TRUE)
-
-# Create a data frame from the matrix with updated column names
-column_names <- c("<BBB", "BBB", "BBB+", "A-", "A", "A+", ">A+")
-colnames(table_data) <- column_names
-table_df <- as.data.frame(round(table_data, 3))
-
-# Print the table
-knitr::kable(table_df, caption = "Predicted Probabilities for Each Category (Ordinal Regression)")
-
+```{}
 ```
 
-To check the proportional odds assumption the group fit a multinational logistic regression model with the same variables as the final ordinal regression model. The two tables above show predictions from each of the models, on 10 randomly selected observations from out data set. The predicted probabilities for all the categories were similar enough to conclude that the proportional odds assumption was not violated.
+To check the proportional odds assumption the group fit a multinational logistic regression model with the same variables as the final ordinal regression model. The two tables (8 & 9) in the appendix section show predictions from each of the models, on 10 randomly selected observations from out data set. The predicted probabilities for all the categories were similar enough to conclude that the proportional odds assumption was not violated.
 
 ```{r echo=FALSE, results='asis'}
 df_filtered <- df_r
@@ -539,7 +494,7 @@ ggplot(conf_matrix_df, aes(x = Reference, y = Prediction, label = Freq)) +
 
 ```
 
-*Table 8: Overall Performance Statistics from the final model*
+*Table 5: Overall Performance Statistics from the final model*
 
 | Metric                  | Score            |
 |-------------------------|------------------|
@@ -555,7 +510,7 @@ To check the overall performance of the final model, a confusion matrix shown in
 ```{r echo=FALSE, results='hide', warning=FALSE, message=FALSE}
 ```
 
-*Table 9: Final Model Results*
+*Table 6: Final Model Results*
 
 | Predictor Variables          | Odds Ratio | 2.5%  | 97.5% | P-Value |
 |------------------------------|------------|-------|-------|---------|
@@ -600,3 +555,54 @@ Moving forward, our commitment to advancing this work includes:
 
 \
 In summary, recognizing the study's achievements, constraints, and proposed future avenues, this research lays a crucial foundation for understanding credit risk in the dynamic financial environment. Our ongoing endeavors to refine methodologies and data aspire to elevate predictive accuracy and interpretative capabilities in credit risk models, offering actionable insights for investors and financial analysts in navigating the intricacies of the bond market.
+
+## Appendix
+
+```{r echo=FALSE, results='hide', results='asis'}
+# Your table data
+table_data <- matrix(c(
+  0.2242139, 0.6051642, 0.14030691, 0.02792946, 0.0023849073, 6.416369e-07, 3.674757e-08,
+  0.2437800, 0.5567623, 0.15654999, 0.03867288, 0.0042330414, 1.674667e-06, 1.713898e-07,
+  0.1439689, 0.3666926, 0.27248873, 0.16293009, 0.0537281156, 1.081668e-04, 8.337934e-05,
+  0.2990506, 0.5868950, 0.09780077, 0.01531411, 0.0009392902, 1.596220e-07, 6.019318e-09,
+  0.4084235, 0.4128777, 0.13009476, 0.04256727, 0.0060319564, 3.800697e-06, 1.084274e-06,
+  0.1187189, 0.3321557, 0.28483547, 0.19080054, 0.0731312892, 1.823555e-04, 1.757606e-04,
+  0.1940544, 0.4869222, 0.22032010, 0.08316607, 0.0155202451, 1.343427e-05, 3.553851e-06,
+  0.1538599, 0.4069585, 0.26338607, 0.13731238, 0.0383897519, 6.025239e-05, 3.313163e-05,
+  0.1684379, 0.4240143, 0.25266586, 0.12324631, 0.0315709108, 4.372969e-05, 2.104435e-05,
+  0.2225623, 0.3981325, 0.23057913, 0.11784309, 0.0308088782, 4.552338e-05, 2.850320e-05
+), ncol = 7, byrow = TRUE)
+
+# Create a data frame from the matrix with updated column names
+column_names <- c("<BBB", "BBB", "BBB+", "A-", "A", "A+", ">A+")
+colnames(table_data) <- column_names
+table_df <- as.data.frame(table_data)
+table_df <- as.data.frame(round(table_data, 3))
+
+# Print the table
+knitr::kable(table_df, caption = "Predicted Probabilities for Each Category (Multinomial Regression)")
+```
+
+```{r echo=FALSE, results='hide', results='asis'}
+# Your table data
+table_data <- matrix(c(
+  0.08011782, 0.6506046, 0.1850589, 0.05810348, 0.02100391, 0.003772451, 0.0013388737,
+  0.06255257, 0.6126661, 0.2176088, 0.07335475, 0.02715647, 0.004914369, 0.0017468711,
+  0.01697703, 0.3328651, 0.3333188, 0.19771491, 0.09386911, 0.018539347, 0.0067157405,
+  0.12146447, 0.6901299, 0.1336453, 0.03814844, 0.01338588, 0.002382144, 0.0008438434,
+  0.05430691, 0.5871680, 0.2361191, 0.08332501, 0.03134917, 0.005702561, 0.0020292303,
+  0.01394272, 0.2918806, 0.3325592, 0.21985947, 0.11108338, 0.022484361, 0.0081903310,
+  0.03327161, 0.4841775, 0.2937613, 0.12524190, 0.05071325, 0.009453174, 0.0033812564,
+  0.02048938, 0.3740887, 0.3285359, 0.17644867, 0.07949408, 0.015392129, 0.0055511284,
+  0.02293579, 0.3994918, 0.3231672, 0.16391533, 0.07178464, 0.013755675, 0.0049496319,
+  0.02391952, 0.4090337, 0.3207121, 0.15932222, 0.06908037, 0.013189799, 0.0047422792
+), ncol = 7, byrow = TRUE)
+
+# Create a data frame from the matrix with updated column names
+column_names <- c("<BBB", "BBB", "BBB+", "A-", "A", "A+", ">A+")
+colnames(table_data) <- column_names
+table_df <- as.data.frame(round(table_data, 3))
+
+# Print the table
+knitr::kable(table_df, caption = "Predicted Probabilities for Each Category (Ordinal Regression)")
+```
