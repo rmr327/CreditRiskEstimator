@@ -231,11 +231,11 @@ credit_spread_priori <- lm(credit_spread ~ Sector +
 summary(credit_spread_priori)
 ```
 
-**Table A** includes all the statistically significant predictor results from the linear regression model output. Their statistical significance is demonstrated by a small p-value (smaller than 0.001). Understanding the financial concepts associated with the predictors and their correlation with the outcome variable credit spread (from data exploration section) support interpreting these output thoroughly.
+**Table 1** includes all the statistically significant predictor results from the linear regression model output. Their statistical significance is demonstrated by a small p-value (smaller than 0.001). Understanding the financial concepts associated with the predictors and their correlation with the outcome variable credit spread (from data exploration section) support interpreting these output thoroughly.
 
 Duration, which measures the sensitivity of bond price to interest rates variation, is often used to reflect the bond's interest rate risk. The model result demonstrates that for every unit increase in duration, credit spread increases by 0.0285684 units. This positive relationship can be understood through interest rate risk and default time risk. Longer-duration bonds are more sensitive to changes in interest rates. When interest rates rise, the prices of these bonds fall more sharply compared to short-duration bonds. Additionally, longer the duration of a bond, the longer the period over which the issuer must maintain its financial health to avoid default. These all lead to increase uncertainty, risk and risk premium, which are reflected by increased credit spread.
 
-Market capitalization is defined as the total market value of a company's outstanding shares of stock. This could indicate the size of a company. Market capitalization is transformed with a log trasformation for the selected variable model, hence the estimated coefficient has to be interpretted with an exponentiation. Here, everyone one unit of log of market capitalization will lead to a decrease of 0.1175721 of credit spread. As suggested by the model output, market capitalization is negatively correlated with credit spread. This might be due to the fact that larger company tend to have higher stock liquidity and stability, which contributes to lower investor risk and thus lower credit spread.
+Market capitalization is defined as the total market value of a company's outstanding shares of stock. This could indicate the size of a company. Market capitalization is transformed with a log trasformation for the selected variable model, hence the estimated coefficient has to be interpreted with an exponentiation. Here, everyone one unit of log of market capitalization will lead to a decrease of 0.1175721 of credit spread. As suggested by the model output, market capitalization is negatively correlated with credit spread. This might be due to the fact that larger company tend to have higher stock liquidity and stability, which contributes to lower investor risk and thus lower credit spread.
 
 BB composite, which measures credit rating, have all positive estimated coefficients. However, it actually holds a negative correlation with credit spread as we have set the default reference level to "larger than A+ (\>A+)." The positive coefficients resulted from the fact that all the displayed ratings are lower or equal to than A+. This inverse relationship is also demonstrated by **Figure 1** in data exploration, as lower rating hold higher median credit spread. Financially, this also matches with our expectation, as credit spread tends to widen when credit rating drops due to increase potential risk and less liquidity with lower rated companies.
 
@@ -257,10 +257,10 @@ credit_spread <- lm(credit_spread ~ Sector +
 summary(credit_spread)
 ```
 
-Table A: Credit Spread Selected Variable Linear Regression Model Output (Partial)
+Table 1: Credit Spread Selected Variable Linear Regression Model Output (Partial)
 
 |                             |                           |                    |             |             |
-|-----------------------------|---------------------------|--------------------|-------------|-------------|
+|---------------|---------------|---------------|---------------|---------------|
 | **Variables**               | **Estimated Coefficient** | **Standard Error** | **t-Value** | **p-Value** |
 | Duration                    | 0.0285684                 | 0.0013259          | 21.547      | \< 2e-16    |
 | Market Capitalization (new) | -0.1175721                | 0.0097427          | -12.068     | \< 2e-16    |
@@ -271,14 +271,16 @@ Table A: Credit Spread Selected Variable Linear Regression Model Output (Partial
 
 #### Model Assessment
 
-From **Table B**, we find that the root mean squared error (RMSE) from selected variable model is smaller than that of the priori model (0.2676 \< 0.2818). This suggests that the selected variable model performs better. This might be due to the fact that interaction terms are added for the selected variable model. Moreover, the RMSE values from cross validation are similar to RMSE from model output, which suggests that overfiting is avoided pretty well.
+The Selected variable model refers to the final model used to answer research question 1. The selected variable model uses Recursive Feature Elimination to make a reduced model from the Priori model. The selected variables in this model can be seen in table 10 in the appendix section.
 
-R-squared from model output is 0.6965, which claims that 69.65% of the variation in dependent variable can be explained by the model. This is a good enough r-squared in most cases. F-statistics can be used to test the overall significance of the model. While better F-statistics generally suggests higher significance, it needs to be interpreted in conjunction with the p-values. Though the second model has a lower F-statistics than the priori model (118.7 \< 125.4), it has a higher model complexity as it included interaction terms.
+From **Table 2**, we find that the root mean squared error (RMSE) from selected variable model is smaller than that of the priori model (0.2676 \< 0.2818). This suggests that the selected variable model performs better. This might be due to the fact that interaction terms are added for the selected variable model. Moreover, the RMSE values from cross validation are similar to RMSE from model output, which suggests that overfiting is avoided pretty well.
 
-*Table B: Cross Validation and Model Matrices*
+R-squared from model output is 0.6965, which claims that 69.65% of the variation in dependent variable can be explained by the model. F-statistics can be used to test the overall significance of the model. While better F-statistics generally suggests higher significance, it needs to be interpreted in conjunction with the p-values. Though the second model has a lower F-statistics than the priori model (118.7 \< 125.4), it has a higher model complexity as it included interaction terms.
+
+*Table 2: Cross Validation and Model Matrices*
 
 |              |              |                  |                          |                             |
-|--------------|--------------|------------------|--------------------------|-----------------------------|
+|---------------|---------------|---------------|---------------|---------------|
 |              | Priori Model | Model (selected) | Cross Validation(Priori) | Cross Validation (selected) |
 | RMSE         | 0.2818       | 0.2676           | 0.2863259                | 0.269756                    |
 | R-squared    | 0.6725       | 0.6965           | 0.6610463                | 0.6860763                   |
@@ -335,17 +337,17 @@ print("cross validation for selected variable model: ")
 print(cv_selected) 
 ```
 
-VIF is also processed for testing collinearity. All modified GVIF values (shown in **Table C**) for selected predictors are less than 2. This shows that no serious collinearity exists for the model.
+VIF is also processed for testing collinearity. All modified GVIF values (shown in **Table 3**) for selected predictors are less than 2. This shows that no serious collinearity exists for the model.
 
 ```{r echo=FALSE, results='hide', warning=FALSE}
 vif_model <- vif(credit_spread, type = 'predictor')
 print(vif_model)
 ```
 
-*Table C: VIF Output and GVIF Values*
+*Table 3 VIF Output and GVIF Values*
 
 |        Variables        |     GVIF     | Degree of freedom | **GVIF\^(1/(2\*Df))** |
-|:-----------------------:|:------------:|:-----------------:|:---------------------:|
+|:------------------:|:---------------:|:---------------:|:----------------:|
 |         Sector          | 2.182726e+01 |        26         |       1.061085        |
 |        Duration         | 1.055998e+00 |         1         |       1.027618        |
 |  Market Capitalization  | 2.762059e+00 |         1         |       1.661944        |
@@ -356,7 +358,7 @@ print(vif_model)
 | operating profit margin | 1.623157e+00 |         1         |       1.274032        |
 |          score          | 2.580289e+09 |        17         |       1.891532        |
 
-To verify that the assumptions for linear regression are met by the model, diagnostic plots on residuals are plotted (**Figure 3**). The plot on residuals and fitted values confirms that the linearity assumption is met, as the residuals are randomly distributed around the horizontal axis (at zero). The Q-Q residuals plot verifies the normality of residual assumption as the points fall approximately in a straight line. The scale location plot have residuals spread evenly across all levels of fitted value, which confirms that the homoscedasticity assumption is hold. The last plot on residual and leverage shows that there are no influential points as there are no points outside of the cook's distance boundaries.
+To verify that the assumptions for linear regression are met by the model, diagnostic plots on residuals are plotted (**Figure 3**). The plot on residuals and fitted values does not provide enough evidence to prove that the linearity assumption was violated, as the residuals are randomly distributed around the horizontal axis (at zero). The Q-Q residuals plot verifies the normality of residual assumption as the points fall approximately in a straight line. The scale location plot have residuals spread evenly across all levels of fitted value, which confirms that the homoscedasticity assumption is hold. The last plot on residual and leverage shows that there is no evidence for influential points as there are no points outside of the cook's distance boundaries.
 
 *Figure 3: Diagnostic Plots For Model Output*
 
@@ -402,7 +404,7 @@ lr_test <- lrtest(ord_mod, reduced_model)
 print(lr_test)
 ```
 
-*Table 3) Result of Likelihood ratio test on Debt to Equity Ratio*
+*Table 4) Result of Likelihood ratio test on Debt to Equity Ratio*
 
 | Log Liklihood | Df  | Chi-Square | Pr(\>Chi-Square) |
 |---------------|-----|------------|------------------|
@@ -432,7 +434,7 @@ To evaluate the validity of the model, our team conducted a thorough examination
 vif(reduced_model)
 ```
 
-*Table 4) Variance Inflation Factors (VIF) for the final model*
+*Table 5) Variance Inflation Factors (VIF) for the final model*
 
 | Predictor                    | VIF  |
 |------------------------------|------|
@@ -488,7 +490,7 @@ ggplot(conf_matrix_df, aes(x = Reference, y = Prediction, label = Freq)) +
 
 ```
 
-*Table 5: Overall Performance Statistics from the final model*
+*Table 6: Overall Performance Statistics from the final model*
 
 | Metric                  | Score            |
 |-------------------------|------------------|
