@@ -138,14 +138,18 @@ We plotted the below two outcome variables:
 bonds$BB_COMPOSITE_fac <- factor(bonds$BB_COMPOSITE, levels = c('AAA', 'AA+', 'AA', 'AA-', 'A+', 'A', 'A-', 'BBB+', 'BBB', 'BBB-', 'BB+'))
 plot_2 <- ggplot(bonds, aes(x = BB_COMPOSITE_fac, fill = BB_COMPOSITE_fac)) +
   geom_bar() +
-  labs(x = "Bloomberg Composite Credit Rating", y = "Frequency", title = "Histogram of Credit Rating") +
+  labs(x = "Bloomberg Composite Credit Rating", 
+       y = "Frequency", 
+       title = "Histogram of Credit Rating", 
+       fill = 'Credit rating') +
   theme_minimal() +
   theme(axis.text.x = element_blank())  # Remove x-axis ticks
 
 # Create the histogram plot
 plot_1 <- ggplot(bonds, aes(x = credit_spread)) +
   geom_histogram(binwidth = 0.2, fill = "skyblue", color = "black") +
-  labs(x = "Credit Spread", y = NULL, 
+  labs(x = "Credit Spread", 
+       y = NULL, 
        title = "Histogram of Credit Spread") +
   theme_minimal()
 
