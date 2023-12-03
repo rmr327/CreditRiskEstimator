@@ -231,11 +231,11 @@ credit_spread_priori <- lm(credit_spread ~ Sector +
 summary(credit_spread_priori)
 ```
 
-**Table 1** includes all the statistically significant predictor results from the linear regression model output. Their statistical significance is demonstrated by a small p-value (smaller than 0.001). Understanding the financial concepts associated with the predictors and their correlation with the outcome variable credit spread (from data exploration section) support interpreting these output thoroughly.
+**Table A** includes the linear regression results from the most relevant predictors. Their statistical significance is demonstrated by a small p-value (smaller than 0.001). Understanding the financial concepts associated with the predictors and their correlation with the outcome variable credit spread (from data exploration section) support interpreting these output thoroughly.
 
-Duration, which measures the sensitivity of bond price to interest rates variation, is often used to reflect the bond's interest rate risk. The model result demonstrates that for every unit increase in duration, credit spread increases by 0.0285684 units. This positive relationship can be understood through interest rate risk and default time risk. Longer-duration bonds are more sensitive to changes in interest rates. When interest rates rise, the prices of these bonds fall more sharply compared to short-duration bonds. Additionally, longer the duration of a bond, the longer the period over which the issuer must maintain its financial health to avoid default. These all lead to increase uncertainty, risk and risk premium, which are reflected by increased credit spread.
+Duration, which measures the sensitivity of bond price to interest rates variation, is often used to reflect the bond's interest rate risk. The model result demonstrates that for every unit increase in duration, credit spread increases by 0.0285684 percentage points. This positive relationship can be understood through interest rate risk and default time risk. Longer-duration bonds are more sensitive to changes in interest rates. When interest rates rise, the prices of these bonds fall more sharply compared to short-duration bonds. Additionally, longer the duration of a bond, the longer the period over which the issuer must maintain its financial health to avoid default. These all lead to increase uncertainty, risk and risk premium, which are reflected by increased credit spread.
 
-Market capitalization is defined as the total market value of a company's outstanding shares of stock. This could indicate the size of a company. Market capitalization is transformed with a log trasformation for the selected variable model, hence the estimated coefficient has to be interpreted with an exponentiation. Here, everyone one unit of log of market capitalization will lead to a decrease of 0.1175721 of credit spread. As suggested by the model output, market capitalization is negatively correlated with credit spread. This might be due to the fact that larger company tend to have higher stock liquidity and stability, which contributes to lower investor risk and thus lower credit spread.
+Market capitalization is defined as the total market value of a company's outstanding shares of stock. This could indicate the size of a company. Market capitalization is transformed using a log transformation for the selected variable model. Here, every one unit increase of log of market capitalization will lead to a decrease of 0.1175721 of credit spread. As suggested by the model output, market capitalization is negatively correlated with credit spread. This might be due to the fact that larger company tend to have higher stock liquidity and stability, which contributes to lower investor risk and thus lower credit spread.
 
 BB composite, which measures credit rating, have all positive estimated coefficients. However, it actually holds a negative correlation with credit spread as we have set the default reference level to "larger than A+ (\>A+)." The positive coefficients resulted from the fact that all the displayed ratings are lower or equal to than A+. This inverse relationship is also demonstrated by **Figure 1** in data exploration, as lower rating hold higher median credit spread. Financially, this also matches with our expectation, as credit spread tends to widen when credit rating drops due to increase potential risk and less liquidity with lower rated companies.
 
@@ -347,7 +347,7 @@ print(vif_model)
 *Table 3 VIF Output and GVIF Values*
 
 |        Variables        |     GVIF     | Degree of freedom | **GVIF\^(1/(2\*Df))** |
-|:------------------:|:---------------:|:---------------:|:----------------:|
+|:------------------:|:----------------:|:----------------:|:----------------:|
 |         Sector          | 2.182726e+01 |        26         |       1.061085        |
 |        Duration         | 1.055998e+00 |         1         |       1.027618        |
 |  Market Capitalization  | 2.762059e+00 |         1         |       1.661944        |
@@ -386,7 +386,7 @@ summary(ord_mod)
 
 ##### Reduced Model
 
-With the goal of making the final model easier to interpret and understand, less susceptible to over-fitting, and increased generality , Likelihood Ratio Tests were performed to prune statistically insignificant predictors. If the p-value from the liklihood ratio test is more than the chosen significance level, the null hypothesis may not be rejected.
+With the goal of making the final model easier to interpret and understand, less susceptible to over-fitting, and increased generality , Likelihood Ratio Tests were performed to prune statistically insignificant predictors. If the p-value from the likelihood ratio test is more than the chosen significance level, the null hypothesis may not be rejected.
 
 ```{r echo=FALSE, results='hide'}
 # Assuming original_df is your original data frame
@@ -406,11 +406,11 @@ print(lr_test)
 
 *Table 4) Result of Likelihood ratio test on Debt to Equity Ratio*
 
-| Log Liklihood | Df  | Chi-Square | Pr(\>Chi-Square) |
-|---------------|-----|------------|------------------|
-| -2300.8       | -1  | 0.3017     | 0.5828           |
+| Log Likelihood | Df  | Chi-Square | Pr(\>Chi-Square) |
+|----------------|-----|------------|------------------|
+| -2300.8        | -1  | 0.3017     | 0.5828           |
 
-The table above shows the results of the only significant Likilihood Ratio test. The null hypothesis (H0) for this test is that adding **`debt to equity ratio`** does not significantly improve the model fit. The chi-squared statistic is noted to be 0.3017 with 1 degree of freedom, resulting in a p-value of 0.5828. The p-value is noted to be greater than the typical significance level of 0.05, suggesting that there is not enough evidence to reject the null hypothesis. Therefore, based on the likelihood ratio test, removing the **`debt to equity rtatio`** variable does not have a relevant impact on model fit, and Model 2 may be preferred due to its simplicity. Therefore the `debt to equity ratio` was dropped from the model.
+The table above shows the results of the Likelihood Ratio test performed on the model that removed `debt to equity ratio`. The null hypothesis (H0) for this test is that adding **`debt to equity ratio`** does not significantly improve the model fit. The chi-squared statistic is noted to be 0.3017 with 1 degree of freedom, resulting in a p-value of 0.5828. The p-value is noted to be greater than the typical significance level of 0.05, suggesting that there is not enough evidence to reject the null hypothesis. Therefore, based on the likelihood ratio test, removing the **`debt to equity rtatio`** variable does not have a relevant impact on model fit, and Model 2 may be preferred due to its simplicity. Therefore the `debt to equity ratio` was dropped from the model.
 
 ##### Note on Interaction term
 
