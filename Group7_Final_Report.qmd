@@ -4,7 +4,7 @@
 title: "Unraveling Credit Risk: Inference and Prediction Models for S&P 500 Bonds"
 author: "Kelly Tong, Rakeen Rouf, Lisa Wang, Javier Cervantes"
 date: 12/1/2023
-abstract: This analysis rigorously explores critical dimensions of credit risk based on a dataset compiled as of September 22, 2023, with a specific focus on bonds issued exclusively by S&P 500-listed companies. Encompassing essential information such as bond details, company fundamentals, credit ratings, and social sentiment indicators, the research addresses two central inquiries -- the determinants of a bond's credit rating and the predictability of credit spreads. Utilizing an ordinal regression model, the study unveils key insights, highlighting the substantial impact of factors like credit spread, market capitalization, and debt-to-assets ratio on credit ratings. Additionally, employing a linear regression model, the research introduces a model with a root mean squared error (RMSE) of 0.2676 and an R-squared of 0.6965 in predicting credit spreads. This comprehensive exploration offers valuable implications for investors and financial analysts navigating the intricacies of credit risk within the dynamic financial landscape.
+abstract: This analysis rigorously explores critical dimensions of credit risk based on a dataset compiled as of September 22, 2023, with a specific focus on bonds issued exclusively by S&P 500-listed companies. Encompassing essential information such as bond details, company fundamentals, credit ratings, and social sentiment indicators, the research addresses two central inquiries -- the determinants of a bond's credit rating and the predictability of credit spreads. Employing a linear regression model, the research introduces a model with a root mean squared error (RMSE) of 0.2676 and an R-squared of 0.6965 in predicting credit spreads. Addtionally, utilizing an ordinal regression model, the study unveils key insights, highlighting the substantial impact of factors like credit spread, market capitalization, and debt-to-assets ratio on credit ratings. This comprehensive exploration offers valuable implications for investors and financial analysts navigating the intricacies of credit risk within the dynamic financial landscape.
 format:
   pdf:  
     fontsize: 10pt
@@ -21,9 +21,19 @@ editor: visual
 
 ## Introduction
 
-In the complex landscape of finance, the management and assessment of credit risk play pivotal roles in shaping investment strategies and influencing market dynamics. The finance problem at the heart of this research revolves around the need for a deeper understanding of credit risk within the context of bonds issued by companies listed in the S&P 500. As investors seek avenues to optimize their portfolios and financial institutions strive for effective risk management, the questions of what factors contribute to a bond's credit rating and how credit spreads can be predicted become paramount. In an ever-evolving financial environment, where market conditions and sentiment can swiftly impact investment outcomes, addressing these questions is not merely an academic pursuit but a practical necessity. The outcomes of this analysis hold the potential to refine credit risk assessment methodologies, offering tangible benefits for investors, financial analysts, and the broader financial ecosystem.
+In the intricate world of finance, evaluating and managing credit risk are pivotal in shaping investment strategies and influencing how the market moves. This research delves into a central financial issue --- understanding credit risk in bonds from companies listed in the S&P 500. As investors look for ways to optimize their portfolios and financial institutions aim for effective risk management, a deeper grasp of credit risk becomes crucial. In the ever-changing financial landscape, where market conditions and sentiment can swiftly impact investment results, tackling these questions is more than just an academic exercise; it's a practical need. The results of this analysis could refine how we assess credit risk, bringing tangible benefits to investors, financial analysts, and the broader financial world.
 
-The dataset we used to analyze the research problem is a subset of the holdings within an ETF, exclusively representing companies listed in the S&P 500. It comprises **2,341** rows, with each row corresponding to a specific bond issued by an S&P 500 company. Across the dataset, there are **34** variables, which can be grouped into four distinct categories:
+We specifically focus on two research questions related to credit ratings:
+
+1.  **Can we predict a specific bond's credit spread by examining a company's fundamentals and market sentiment?**
+
+    -   Credit spread, a vital measure of credit risk, is on our prediction radar. By anticipating credit spreads, we aim to empower investors and financial institutions to proactively handle and reduce credit risk, ultimately aiding in making more informed investment decisions.
+
+2.  **What factors contribute to a bond's credit rating?**
+
+    -   A bond's credit score, like AAA or B+, is a numerical gauge of the issuer's reliability in repaying debts. We're delving into the elements that distinguish a bond with a high credit score from one with a lower score, aiming to uncover the factors that make a bond more trustworthy.
+
+To address our research questions, we curated data from diverse sources, ultimately utilizing a subset of holdings within an ETF that exclusively comprises companies listed in the S&P 500. This final dataset, tailored for analyzing the research problem, consists of 2,341 rows, each corresponding to a specific bond issued by an S&P 500 company. Across the dataset, 34 variables are distributed among four distinct categories:
 
 1.  **Bond information from iShare:** Information related to the bonds, including the issuer's name, industry sector, price, duration, yield to maturity, issuer's stock ticker, and market capitalization. Sourced from the USIG Ishares Credit Bond ETF[^group7_final_report-1]
 
@@ -33,15 +43,15 @@ The dataset we used to analyze the research problem is a subset of the holdings 
 
 4.  **Social sentiment indicators from Finhubb API:** Social sentiment indicators including the number of positive and negative mentions on Reddit last year. Sourced from the Finnhub API[^group7_final_report-5]
 
-[^group7_final_report-1]: iShares by BlackRock. (2023). Retrieved from https://www.ishares.com/us
+[^group7_final_report-1]: iShares by BlackRock (2023). Retrieved from https://www.ishares.com/us
 
-[^group7_final_report-2]: iShares by BlackRock. (2023). Retrieved from https://www.ishares.com/us
+[^group7_final_report-2]: Yahoo! Finance (2023). Company profiles, income statements, balance sheets, and event/announcement details for various companies. Retrieved from http://finance.yahoo.com/
 
-[^group7_final_report-3]: Yahoo! Finance. (2023). Company profiles, income statements, balance sheets, and event/announcement details for various companies. Retrieved from http://finance.yahoo.com/
+[^group7_final_report-3]: yfinance (Version 0.2.29). (2023). Retrieved September 22, 2023, from https://pypi.org/project/yfinance/
 
 [^group7_final_report-4]: Bloomberg L.P. (2023). Retrieved from Bloomberg terminal https://www.bloomberg.com/professional/solution/bloomberg-terminal/
 
-[^group7_final_report-5]: Finnhub API. (Version 1.0.0). (2023). Retrieved from https://finnhub.io/docs/api/introduction
+[^group7_final_report-5]: Finnhub API (Version 1.0.0). (2023). Retrieved from https://finnhub.io/docs/api/introduction
 
 ```{r echo=FALSE, results='hide', warning=FALSE}
 #reading dataset 
@@ -70,71 +80,70 @@ library(nnet) # package for multinomial model
 
 ### Data Analysis and Data Cleaning
 
-\
 In the initial phase of our analysis, we conducted a comprehensive Exploratory Data Analysis (EDA) to gain insights into the dataset and identify patterns, outliers, and potential relationships between variables.
 
-1.  **Distribution Plots:** We examined the distribution of outcome variables using histograms, enhancing our understanding of skewness, kurtosis, and potential outliers. This guided decisions on collapsing categories.
+1.  **Distribution Plots:** We examined the distribution of variables using histograms, enhancing our understanding of skewness, kurtosis, and potential outliers. This guided decisions on collapsing categories.
 2.  **Primary Relationships:** We identified potential patterns, correlations, or associations between the outcome variable and predictors. For continuous variables, we utilized scatter plots to assess relationships with the outcome variable, while histograms and boxplots aided in evaluating categorical/ordinal variable relationships.
 3.  **Missing Values:** Given the different accounting practices of the different kinds of businesses in each of the Sectors in our universe, there are bound to be many (often very concentrated) NAs. Our approach consists in exploring the nature of those NAs to determine if those values should be removed, replaced or handled in any other way.
 4.  **Outlier Identification:** We actively analyzed outliers using boxplots and performed Cook's distance to identify influential points, making decisions on handling outliers during the EDA phase.
-5.  **Variable Transformations:** We explore potential transformations like logarithmic or square root transformations to address issues such as skewed distributions or heteroscedasticity.
+5.  **Collinearity**: We assessed collinearity among the variables through a correlation matrix, leveraging the insights to guide model selection. Additionally, during model fitting, we examined variance inflation factor (VIF) to ensure there were no significant correlations.
+6.  **Variable Transformations:** We explore potential transformations like logarithmic or square root transformations to address issues such as skewed distributions or heteroscedasticity.
 
-\
 After completing the Exploratory Data Analysis (EDA), we applied data cleaning procedures informed by our EDA findings to enhance the efficiency of subsequent modeling processes.
 
 ### Research Question 1
 
-......
+#### Technique
 
-##### Technique
+To address Research Question 1, a linear regression model was employed with the aim of predicting a certain bond's credit spread based on a combination of company fundamentals and market sentiment. The choice of linear regression was driven by its suitability for capturing linear relationships between variables and providing insights into the impact of each predictor on the credit spread. The variables selected for the model were determined through a thoughtful combination of domain knowledge and Recursive Feature Elimination (RFE) to enhance the model's predictive capabilities.
 
-.....
+#### Assumptions
 
-##### Assumptions
+The assumptions underlying the linear regression model include linearity, independence of residuals, homoscedasticity (constant variance of residuals), and normality of residuals. These assumptions were evaluated through diagnostic plots and statistical tests.
 
-.....
+#### Model Assessment
 
-### Assessments
-
-.....
+The model was assessed based on statistical metrics such as the root mean squared error (RMSE), R-squared, mean absolute error (MAE), and F-statistics. Additionally, a 10-fold cross-validation was performed to gauge the model's generalization performance and avoid overfitting.
 
 ### Research Question 2
 
-This section will discuss the methodology for answer our research question 1. Recall that research question 2 is: "What factors influence a company's credit rating?"
+#### Technique
 
-##### Technique
+For Research Question 2, focused on understanding the factors influencing a company's credit rating, an ordinal logistic regression model was employed. The ordinal nature of the outcome variable (Bloomberg Composite Credit Ratings) led to the selection of this statistical technique. Likelihood ratio tests were utilized for variable selection, and a reduced model was derived for interpretability.
 
-Given the ordinal nature of the outcome variable (Bloomberg Composite Credit Ratings), Ordinal Logistic Regression was chosen to answer the research question. Ordinal logistic regression is a statistical model used to analyze ordinal data, which is categorical data with an ordered ranking. Unlike nominal logistic regression, which is used for un-ordered categorical data, ordinal logistic regression takes into account the ordering of the categories.
+#### Assumptions
 
-##### Assumptions
+The assumptions for Ordinal Logistic Regression is very similar the Linear Regression model from research question 1, with the added assumption of Proportional Odds. The Proportional Odds assumption demands that the relationship between the predictors and the odds of being in a higher category is constant across all levels of the dependent variable. The assumptions was carefully evaluated to ensure the model's reliability.
 
-The assumptions for Ordinal Logistic Regression is very similar the Linear Regression model from research question 1, with the added assumption of Proportional Odds. The Proportional Odds assumption demands that the relationship between the predictors and the odds of being in a higher category is constant across all levels of the dependent variable.
+#### Assessments
 
-##### Assessments
-
-To assess the validity of the final model, .....
+The assessment of the ordinal logistic regression model involved likelihood ratio tests, confusion matrix analysis, and overall performance metrics such as accuracy, Kappa statistic, and the No Information Rate. These metrics were crucial for evaluating the model's predictive power and comparing it against a baseline approach.
 
 ## Model Results and Discussion
 
 ### Exploratory Data Analysis
 
-We have two outcome variables:
+**Distribution Plots:**
+
+We plotted the below two outcome variables:
+
+-   The `Credit Spread` is a continuous outcome variable and represents the difference in yield or interest rate between a particular bond and a benchmark US Treasury bond.
 
 -   The `Credit Rating` is an ordinal categorical variable, and represents an equally weighted blend of the ratings of a security by Moody's, S&P, Fitch, and DBRS as published by Bloomberg
 
--   The `Credit Spread` is a continuous outcome variable and represents the difference in yield or interest rate between a particular bond and a benchmark US Treasury bond.
+*Figure 1.1, 1.2: Distribution of Outcome Variables*
 
 ```{r, warning=FALSE, message=FALSE, fig.width=9, fig.height=3}
 #| echo: false
 bonds$BB_COMPOSITE_fac <- factor(bonds$BB_COMPOSITE, levels = c('AAA', 'AA+', 'AA', 'AA-', 'A+', 'A', 'A-', 'BBB+', 'BBB', 'BBB-', 'BB+'))
-plot_1 <- ggplot(bonds, aes(x = BB_COMPOSITE_fac, fill = BB_COMPOSITE_fac)) +
+plot_2 <- ggplot(bonds, aes(x = BB_COMPOSITE_fac, fill = BB_COMPOSITE_fac)) +
   geom_bar() +
   labs(x = "Bloomberg Composite Credit Rating", y = "Frequency", title = "Histogram of Credit Rating") +
   theme_minimal() +
   theme(axis.text.x = element_blank())  # Remove x-axis ticks
 
 # Create the histogram plot
-plot_2 <- ggplot(bonds, aes(x = credit_spread)) +
+plot_1 <- ggplot(bonds, aes(x = credit_spread)) +
   geom_histogram(binwidth = 0.2, fill = "skyblue", color = "black") +
   labs(x = "Credit Spread", y = NULL, 
        title = "Histogram of Credit Spread") +
@@ -143,9 +152,9 @@ plot_2 <- ggplot(bonds, aes(x = credit_spread)) +
 grid.arrange(plot_1, plot_2, ncol = 2)
 ```
 
-There is a multitude of categories in Credit Ratings and Sector, with some having minimal data. This situation could lead to high standard errors and adversely affect the quality of our model. We collapsed the four highest ratings: AAA, AA+, AA & AA- into a single category called \>A+. Additionally, we collapsed the two lowest: BB+ and BBB- into \<BBB.
+The Figure 1.1 illustrates that the outcome variable, credit spread, exhibits a slight rightward skew but maintains a generally normal distribution. While the Figure 1.2 demonstrates that there is a multitude of categories in Credit Ratings and Sector, with some having minimal data. This situation could lead to high standard errors and adversely affect the quality of our model. We collapsed the four highest ratings: AAA, AA+, AA & AA- into a single category called \>A+. Additionally, we collapsed the two lowest: BB+ and BBB- into \<BBB.
 
-Finally, we collapsed some Sectors which had very few observations: Brokerage/Asset Managers/Exchanges and Reit were collapsed into Finance; Natural Gas and Electric were collapsed into Energy; Transportation was collapsed into Communications.
+Similarly, for the one of the predictor variable "Sector", we also collapsed some categories which had very few observations: Brokerage/Asset Managers/Exchanges and Reit were collapsed into Finance; Natural Gas and Electric were collapsed into Energy; Transportation was collapsed into Communications.
 
 ```{r echo=FALSE, results='hide'}
 # collapsing credit ratings
@@ -166,7 +175,11 @@ bonds$Sector <- ifelse(bonds$Sector == "Reits", "Finance", bonds$Sector)
 bonds$Sector <- ifelse(bonds$Sector == "Transportation", "Communications", bonds$Sector)
 ```
 
+**Primary Relationships:**
+
 We performed some a priori EDA along with some prior domain knowledge in order to adequately select the variables that show a relationship with the outcome of interest.
+
+*Figure 2: Primary Relationships between the predictor variables and the outcome variables*
 
 ```{r, warning=FALSE, message=FALSE, fig.width=9, fig.height=3}
 plot1 <- ggplot(subset(bonds, BB_COMPOSITE %in% c('A-', 'BBB+', 'BBB')), aes(x = Duration, y = credit_spread)) +
@@ -180,15 +193,11 @@ plot2 <- ggplot(bonds, aes(x = BB_COMPOSITE, y = score)) +
 grid.arrange(plot1, plot2, ncol = 2)
 ```
 
-Contrary to what domain knowledge would suggest, we found a few variables that didn't seem to have a clear relationship with our outcome variables:
+**Missing values:** The dataset contains a concentration of missing values in company fundamental information obtained from Yahoo Finance, with approximately 300 missing values out of 2341 total observations, particularly in columns related to coverage ratios and liquidity ratios. This missingness is attributed to variations in accounting practices and the diverse nature of businesses in our dataset. Upon conducting exploratory data analysis (EDA), we discovered that, contrary to domain knowledge expectations, these variables showed no discernible relationship with our outcome variables, probably due to the missing data. Given that these predictors are likely to introduce additional variance and noise, we have opted to exclude them from our model.
 
--   **Coverage ratios:** EDA suggests that the coverage ratios show no meaningful relationship with our outcome variables in addition to containing a large amount of NAs. The reason for this could be the different accounting practices and the different nature of the businesses in our universe. Since these predictors will surely result in added variance and noise, they have been removed from our model.
+**Outlier Identification:** Upon conducting a box plot analysis on the variables, we identified outliers in several columns. Notably, observations in the Market Capitalization column exhibited very high values, and the Debt-to-Equity variable showed instances with values less than -100 and values exceeding 150. Nevertheless, these outliers are likely to represent genuine phenomena in the financial domain, given the inherent volatility of the business and the occasional one-off accounting nature of financial statements. When calculating ratios, values can swing wildly from quarter to quarter. Subsequent Cook's distance analysis, following model fitting, revealed that all values were below 0.03, indicating that extreme predictors did not significantly impact the model fit. Consequently, we have retained the outliers in our analysis, recognizing their potential relevance and minimal influence on the overall model performance.
 
--   **Liquidity ratios:** Once again, different accounting practices cause several NAs in our data. This lead to results that suggest that no meaningful relationship exists between these ratios and our outcome variables in addition to many relevant rows being dropped. These predictors were removed from our model.
-
-Upon conducting a box plot analysis on the variables, we identified outliers in several columns. Notably, observations in the Market Capitalization column exhibited very high values, and the Debt-to-Equity variable showed instances with values less than -100 and values exceeding 150. However, these outliers likely represent genuine phenomena in the financial domain. Subsequent Cook's distance analysis, following model fitting, revealed that all values were below 0.03, indicating that extreme predictors did not significantly impact the model fit. Consequently, we have retained the outliers in our analysis, recognizing their potential relevance and minimal influence on the overall model performance.
-
-To conclude our EDA, we found that the Market capitalization variable seemed to have a non-linear relationship with our outcome and therefore could benefit from a log-transformation.
+**Variable Transformations:** To conclude our EDA, we found that the Market capitalization variable seemed to have a non-linear relationship with our outcome and therefore could benefit from a log-transformation.
 
 ```{r echo=FALSE, results='hide'}
 #log transformation of market capitalization since it is right-skewed
@@ -343,9 +352,9 @@ print(vif_model)
 | operating profit margin | 1.623157e+00 |         1         |       1.274032        |
 |          score          | 2.580289e+09 |        17         |       1.891532        |
 
-To verify that the assumptions for linear regression are met by the model, diagnostic plots on residuals are plotted (**Figure 2**). The plot on residuals and fitted values confirms that the linearity assumption is met, as the residuals are randomly distributed around the horizontal axis (at zero). The Q-Q residuals plot verifies the normality of residual assumption as the points fall approximately in a straight line. The scale location plot have residuals spread evenly across all levels of fitted value, which confirms that the homoscedasticity assumption is hold. The last plot on residual and leverage shows that there are no influential points as there are no points outside of the cook's distance boundaries.
+To verify that the assumptions for linear regression are met by the model, diagnostic plots on residuals are plotted (**Figure 3**). The plot on residuals and fitted values confirms that the linearity assumption is met, as the residuals are randomly distributed around the horizontal axis (at zero). The Q-Q residuals plot verifies the normality of residual assumption as the points fall approximately in a straight line. The scale location plot have residuals spread evenly across all levels of fitted value, which confirms that the homoscedasticity assumption is hold. The last plot on residual and leverage shows that there are no influential points as there are no points outside of the cook's distance boundaries.
 
-Figure 2: Diagnostic Plots For Model Output
+*Figure 3: Diagnostic Plots For Model Output*
 
 ```{r echo=FALSE, warning=FALSE, fig.width=10, fig.height=3}
 par(mfrow=c(1, 4))
@@ -522,7 +531,7 @@ ggplot(conf_matrix_df, aes(x = Reference, y = Prediction, label = Freq)) +
   geom_text(color = "black") +
   scale_fill_gradient(low = "lightblue", high = "darkblue") +
   theme_minimal() +
-  labs(title = "Figure 3: Confusion Matrix for Final Ordinal Model")
+  labs(title = "Figure 4: Confusion Matrix for Final Ordinal Model")
 
 ```
 
@@ -571,16 +580,19 @@ Investors often rely on credit ratings to assess the creditworthiness of compani
 
 ## Conclusion
 
-## Findings
+In conclusion, this research, conducted on a dataset as of September 22, 2023, delves deeply into critical dimensions of credit risk, with a specific emphasis on bonds issued by companies listed in the S&P 500. And use linear regression to predict the credit sperad and use ordinal logistic regression to infer the credit rating. Specifically, there are several advantanges of the study. First, its innovative in combining different data sources, such as sentiment score and company information. These gives us new insights. Secondly, the data was acquared in the sep, 2023, so it is a new dataset and provide us timely undrestanding of the questions. Thirdly, the study followed a rigourous step and provide valid and credible resutls. The findings hold practical implications for stakeholders navigating the complexities of credit risk. Investors and financial analysts can leverage the identified determinants to make more informed decisions, considering not only the inherent qualities of a bond but also the broader market dynamics and sentiment.
 
-### Limitation
+The studies still bear some limitation:
 
-1.  **Dependence Among Rows:** One notable limitation of our analysis arises from the potential lack of independence among rows. Since multiple rows correspond to bonds issued by the same company, there may be interdependence among observations. A hierarchical modeling approach, incorporating random effects for companies, could address this issue by capturing the inherent correlation within the data
-2.  **Generalization to Broader Market Dynamics:** Our analysis focuses on bonds issued by companies listed in the S&P 500, limiting the generalizability of our findings to a broader market context. The dynamics of credit risk assessment may differ for companies outside this scope, and caution should be exercised when extending our conclusions to a more diverse range of entities.
-3.  **Non-Time Series Analysis:** It's essential to highlight that our study does not employ a time series analysis. This limitation restricts our ability to capture temporal dynamics and trends in credit risk over time. Future research endeavors could delve into time-series methodologies, providing a more comprehensive understanding of how credit risk evolves and responds to varying economic conditions.
+1.  **Dependence Among Rows:** One notable limitation of the analysis arises from the potential lack of independence among rows. Since multiple rows correspond to bonds issued by the same company, there may be interdependence among observations. A hierarchical modeling approach, incorporating random effects for companies, could address this issue by capturing the inherent correlation within the data
+2.  **Generalization to Broader Market Dynamics:** The analysis focuses on bonds issued by companies listed in the S&P 500, limiting the generalizability of our findings to a broader market context. The dynamics of credit risk assessment may differ for companies outside this scope, and caution should be exercised when extending our conclusions to a more diverse range of entities.
+3.  **Non-Time Series Analysis:** It's essential to highlight that the study does not employ a time series analysis. This limitation restricts our ability to capture temporal dynamics and trends in credit risk over time. Future research endeavors could delve into time-series methodologies, providing a more comprehensive understanding of how credit risk evolves and responds to varying economic conditions.
 
-### Future Work
+Moving forward, our commitment to advancing this work includes:
 
 1.  **Machine Learning Model Refinement:** Delving into advanced machine learning algorithms, exploring ensemble methods, or tailoring deep learning architectures specifically for credit risk assessment holds the potential to uncover novel avenues for improving predictive accuracy and unlocking additional dimensions of insight.
 2.  **Incorporate External Economic Indicators:** Integrate external economic indicators, such as interest rates, inflation, and GDP growth, into the analysis. Explore their impact on credit risk and assess how macroeconomic conditions influence the creditworthiness of companies and the corresponding bond markets.
 3.  **Stakeholder Engagement and User Feedback:** Engage with stakeholders, including investors, financial institutions, and industry experts, to gather feedback on the analysis outcomes. Understand user needs and perspectives to tailor future research efforts to address practical challenges faced by the financial community.
+
+\
+In summary, recognizing the study's achievements, constraints, and proposed future avenues, this research lays a crucial foundation for understanding credit risk in the dynamic financial environment. Our ongoing endeavors to refine methodologies and data aspire to elevate predictive accuracy and interpretative capabilities in credit risk models, offering actionable insights for investors and financial analysts in navigating the intricacies of the bond market.
