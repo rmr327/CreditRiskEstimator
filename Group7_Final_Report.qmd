@@ -243,10 +243,6 @@ BB composite, which measures credit rating, holds a negative correlation with cr
 
 Editda margin measures a company's operating profitability as a percentage of its revenue. The estimated coefficient suggests that as Editda margin increases by one unit, credit spread will decrease by 0.2333926 units. This inverse correlation is supported by its financial implications. A higher EBITDA margin indicates that a company is generating substantial earnings from its operations relative to its revenue, suggesting better financial health and efficiency. Thus companies with higher EBITDA margins are generally seen more capable of covering their interest expenses and other financial obligations. It can also increase investor confidence, which leads to lower yields demanded by investors. These all translate into lower credit spreads.
 
-##### Interaction term
-
-Interaction terms, (*shown in Appendix A*), though not statistically significant, do provide some potential practical significance as indicated by their results. Sector seems to have a large impact on the relationship between score and credit spread. This is shown by a negative estimated coefficient for some sectors (energy, finance, insurance), and positive for others. On the other hand, debt to assets seem to hold a positive relationship with credit spread regardless of the sectors. These inferences can be tested further with larger sample size and cleaner dataset.
-
 ```{r echo=FALSE, results='hide'}
 credit_spread <- lm(credit_spread ~ Sector + 
                           Duration + 
@@ -281,6 +277,10 @@ Table 1: Credit Spread Selected Variable Linear Regression Model Output (Partial
 | Ebitda margin               | -0.2333926                | 0.0493347          | -4.731      | 2.40e-06    |
 
 *Please find full model output in Appendix A.*
+
+##### Interaction term
+
+Interaction terms, (*shown in Appendix A*), though not statistically significant, do provide some potential practical significance as indicated by their results. Sector seems to have a large impact on the relationship between score and credit spread. This is shown by a negative estimated coefficient for some sectors (energy, finance, insurance), and positive for others. On the other hand, debt to assets seem to hold a positive relationship with credit spread regardless of the sectors. These inferences can be tested further with larger sample size and cleaner dataset.
 
 #### Model Assessment
 
