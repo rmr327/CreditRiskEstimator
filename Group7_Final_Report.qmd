@@ -148,7 +148,7 @@ plot_2 <- ggplot(bonds, aes(x = BB_COMPOSITE_fac, fill = BB_COMPOSITE_fac)) +
 # Create the histogram plot
 plot_1 <- ggplot(bonds, aes(x = credit_spread)) +
   geom_histogram(binwidth = 0.2, fill = "skyblue", color = "black") +
-  labs(x = "Credit Spread", 
+  labs(x = "Credit spread (%)", 
        y = NULL, 
        title = "Histogram of Credit Spread") +
   theme_minimal()
@@ -166,7 +166,7 @@ bonds$BB_COMPOSITE <- ifelse(bonds$BB_COMPOSITE %in% c("AAA", "AA+", "AA", "AA-"
 bonds$BB_COMPOSITE <- ifelse(bonds$BB_COMPOSITE %in% c('BB+', 'BBB-'), "<BBB", bonds$BB_COMPOSITE)
 
 # Transform the 'bonds' column into an ordered factor
-bonds$BB_COMPOSITE <- ordered(bonds$BB_COMPOSITE, levels = c("<BBB", "BBB", "BBB+", "A-", "A", "A+",  ">A+"))
+bonds$BB_COMPOSITE <- factor(bonds$BB_COMPOSITE, levels = c("<BBB", "BBB", "BBB+", "A-", "A", "A+",  ">A+"))
 
 ```
 
@@ -237,9 +237,11 @@ Duration, which measures the sensitivity of bond price to interest rates variati
 
 Market capitalization is defined as the total market value of a company's outstanding shares of stock. This could indicate the size of a company. Market capitalization is transformed using a log transformation for the selected variable model. Here, every one unit increase of log of market capitalization will lead to a decrease of 0.1175721 of credit spread. As suggested by the model output, market capitalization is negatively correlated with credit spread. This might be due to the fact that larger company tend to have higher stock liquidity and stability, which contributes to lower investor risk and thus lower credit spread.
 
-BB composite, which measures credit rating, have all positive estimated coefficients. However, it actually holds a negative correlation with credit spread as we have set the default reference level to "larger than A+ (\>A+)." The positive coefficients resulted from the fact that all the displayed ratings are lower or equal to than A+. Financially, this inverse relationship also matches with our expectation, as credit spread tends to widen when credit rating drops due to increase potential risk and less liquidity with lower rated companies.
+BB composite, which measures credit rating, holds a negative correlation with credit spread as we set the default reference level to "smaller than BBB (\< BBB)." Financially, this inverse relationship also matches with our expectation, as credit spread tends to widen when credit rating drops due to increase potential risk and less liquidity with lower rated companies.
 
 Editda margin measures a company's operating profitability as a percentage of its revenue. The estimated coefficient suggests that as Editda margin increases by one unit, credit spread will decrease by 0.2333926 units. This inverse correlation is supported by its financial implications. A higher EBITDA margin indicates that a company is generating substantial earnings from its operations relative to its revenue, suggesting better financial health and efficiency. Thus companies with higher EBITDA margins are generally seen more capable of covering their interest expenses and other financial obligations. It can also increase investor confidence, which leads to lower yields demanded by investors. These all translate into lower credit spreads.
+
+Interaction terms, (*shown in Appendix A*), though not statistically significant, do provide some potential practical significance as indicated by their results. Sector seems to have a large impact on the relationship between score and credit spread. This is shown by a negative estimated coefficient for some sectors (energy, finance, insurance), and positive for others. On the other hand, debt to assets seem to hold a positive relationship with credit spread regardless of the sectors. These inferences can be tested further with larger sample size and cleaner dataset.
 
 ```{r echo=FALSE, results='hide'}
 credit_spread <- lm(credit_spread ~ Sector + 
@@ -264,9 +266,14 @@ Table 1: Credit Spread Selected Variable Linear Regression Model Output (Partial
 | **Variables**               | **Estimated Coefficient** | **Standard Error** | **t-Value** | **p-Value** |
 | Duration                    | 0.0285684                 | 0.0013259          | 21.547      | \< 2e-16    |
 | Market Capitalization (new) | -0.1175721                | 0.0097427          | -12.068     | \< 2e-16    |
-| BB COMPOSITEBBB+            | 0.3068471                 | 0.0383963          | 7.992       | 2.28e-15    |
-| BB COMPOSITEBBB             | 0.4835675                 | 0.0377419          | 12.812      | \< 2e-16    |
-| BB COMPOSITE\<BBB           | 0.8059875                 | 0.0434127          | 18.566      | \< 2e-16    |
+| BB_COMPOSITEBBB             | -0.3224199                | 0.0225395          | -14.305     | \< 2e-16    |
+| BB_COMPOSITEBBB+            | -0.4991404                | 0.0263314          | -18.956     | \< 2e-16    |
+| BB_COMPOSITEA-              | -0.6629541                |  0.0317235         | -20.898     | \< 2e-16    |
+| BB_COMPOSITEA               | -0.7822065                | 0.0349459          | -22.383     | \< 2e-16    |
+|                             
+ BB_COMPOSITEA+               | -0.7956457                | 0.0372472          | -21.361     | \< 2e-16    |
+|                             
+ BB_COMPOSITE\>A+             | -0.8059875                | 0.0434127          | -18.566     | \< 2e-16    |
 | Ebitda margin               | -0.2333926                | 0.0493347          | -4.731      | 2.40e-06    |
 
 *Please find full model output in Appendix A.*
@@ -554,62 +561,61 @@ Moving forward, our commitment to advancing this work includes:
 \
 In summary, recognizing the study's achievements, constraints, and proposed future avenues, this research lays a crucial foundation for understanding credit risk in the dynamic financial environment. Our ongoing endeavors to refine methodologies and data aspire to elevate predictive accuracy and interpretative capabilities in credit risk models, offering actionable insights for investors and financial analysts in navigating the intricacies of the bond market.
 
+\newpage
+
 ## Appendix
 
-Appendix A: Complete Selected Variable Model Output for Linear Regression Model
+Appendix A:
 
-|                                              |                           |                    |             |             |
+Table 8: Complete Selected Variable Model Output for Linear Regression Model
+
+|                                                  |                           |                    |             |             |
 |---------------|---------------|---------------|---------------|---------------|
-| **Variables**                                | **Estimated Coefficient** | **Standard Error** | **t-Value** | **p-Value** |
-| (Intercept)                                  | 1.5754080                 | 0.1509072          | 10.440      | \< 2e-16    |
-| Sector Capital Goods                         | -0.1750492                | 0.1229968          | -1.423      | 0.154841    |
-| Sector Communications                        | -0.3175768                | 0.1481979          | -2.143      | 0.032245    |
-| Sector Consumer Cyclical                     | -0.3680503                | 0.1270225          | -2.898      | 0.003804    |
-| Sector Consumer Non-Cyclical                 | -0.4893863                | 0.1097489          | -4.459      | 8.71e-06    |
-| Sector Energy                                | 0.0232967                 | 0.1218494          | 0.191       | 0.848395    |
-| Sector Finance                               | -0.0369242                | 0.1949179          | -0.189      | 0.849772    |
-| Sector Insurance                             | 1.2926838                 | 0.4825983          | 2.679       | 0.007457    |
-| Sector Technology                            | -0.1600794                | 0.1252922          | -1.278      | 0.201529    |
-| Duration                                     | 0.0285684                 | 0.0013259          | 21.547      | \< 2e-16    |
-| market Capitalization new                    | -0.1175721                | 0.0097427          | -12.068     | \< 2e-16    |
-| roa                                          | -0.4292678                | 0.3680788          | -1.166      | 0.243663    |
-| ebitda_margin                                | -0.2333926                | 0.0493347          | -4.731      | 2.40e-06    |
-| debt_to_assets                               | -0.7610665                | 0.3044289          | -2.500      | 0.012503    |
-| operating_profit_margin                      | 0.0962599                 | 0.0393269          | 2.448       | 0.014467    |
-| score                                        | 0.0004889                 | 0.0013412          | 0.365       | 0.715475    |
-
-```         
-                                  ***
- 
-   
-
-BB_COMPOSITE.L                             -0.6893089  0.0332291 -20.744  < 2e-16 ***
-BB_COMPOSITE.Q                              0.2690539  0.0226079  11.901  < 2e-16 ***
-BB_COMPOSITE.C                             -0.0202882  0.0200752  -1.011 0.312332    
-BB_COMPOSITE^4                              0.0120410  0.0200133   0.602 0.547478    
-BB_COMPOSITE^5                             -0.0358330  0.0200654  -1.786 0.074288 .  
-BB_COMPOSITE^6                             -0.0019316  0.0213448  -0.090 0.927904    
-
-   
-SectorCapital Goods:score                  -0.0001681  0.0015621  -0.108 0.914306    
-SectorCommunications:score                 -0.0042493  0.0017534  -2.424 0.015463 *  
-SectorConsumer Cyclical:score              -0.0027297  0.0016842  -1.621 0.105232    
-SectorConsumer Non-Cyclical:score          -0.0018256  0.0014738  -1.239 0.215609    
-SectorEnergy:score                          0.0016299  0.0015617   1.044 0.296767    
-SectorFinance:score                         0.0015012  0.0019832   0.757 0.449193    
-SectorInsurance:score                       0.0113320  0.0040548   2.795 0.005247 ** 
-SectorTechnology:score                     -0.0012630  0.0017571  -0.719 0.472331    
-SectorCapital Goods:debt_to_assets          0.4305459  0.3483380   1.236 0.216610    
-SectorCommunications:debt_to_assets         1.0760472  0.3395087   3.169 0.001552 ** 
-SectorConsumer Cyclical:debt_to_assets      1.2045228  0.3359646   3.585 0.000345 ***
-SectorConsumer Non-Cyclical:debt_to_assets  1.2952800  0.3137599   4.128 3.81e-05 ***
-SectorEnergy:debt_to_assets                 0.7970035  0.3360730   2.372 0.017814 *  
-SectorFinance:debt_to_assets                0.9745563  0.4481241   2.175 0.029771 *  
-SectorInsurance:debt_to_assets             -2.6858273  1.4369379  -1.869 0.061757 .  
-SectorTechnology:debt_to_assets             0.8265238  0.3333951   2.479 0.013257 *
-```
+| **Variables**                                    | **Estimated Coefficient** | **Standard Error** | **t-Value** | **p-Value** |
+| (Intercept)                                      | 1.5754080                 | 0.1509072          | 10.440      | \< 2e-16    |
+| Sector Capital Goods                             | -0.1750492                | 0.1229968          | -1.423      | 0.154841    |
+| Sector Communications                            | -0.3175768                | 0.1481979          | -2.143      | 0.032245    |
+| Sector Consumer Cyclical                         | -0.3680503                | 0.1270225          | -2.898      | 0.003804    |
+| Sector Consumer Non-Cyclical                     | -0.4893863                | 0.1097489          | -4.459      | 8.71e-06    |
+| Sector Energy                                    | 0.0232967                 | 0.1218494          | 0.191       | 0.848395    |
+| Sector Finance                                   | -0.0369242                | 0.1949179          | -0.189      | 0.849772    |
+| Sector Insurance                                 | 1.2926838                 | 0.4825983          | 2.679       | 0.007457    |
+| Sector Technology                                | -0.1600794                | 0.1252922          | -1.278      | 0.201529    |
+| Duration                                         | 0.0285684                 | 0.0013259          | 21.547      | \< 2e-16    |
+| market Capitalization new                        | -0.1175721                | 0.0097427          | -12.068     | \< 2e-16    |
+| BB COMPOSITE BBB                                 | -0.3224199                | 0.0225395          | -14.305     | \< 2e-16    |
+| BB COMPOSITE BBB+                                | -0.4991404                | 0.0263314          | -18.956     | \< 2e-16    |
+| BB COMPOSITE A-                                  | -0.6629541                |  0.0317235         | -20.898     | \< 2e-16    |
+| BB COMPOSITE A                                   | -0.7822065                | 0.0349459          | -22.383     | \< 2e-16    |
+|                                                  
+ BB COMPOSITE A+                                   | -0.7956457                | 0.0372472          | -21.361     | \< 2e-16    |
+|                                                  
+ BB COMPOSITE \>A+                                 | -0.8059875                | 0.0434127          | -18.566     | \< 2e-16    |
+| roa                                              | -0.4292678                | 0.3680788          | -1.166      | 0.243663    |
+| ebitda_margin                                    | -0.2333926                | 0.0493347          | -4.731      | 2.40e-06    |
+| debt to assets                                   | -0.7610665                | 0.3044289          | -2.500      | 0.012503    |
+| operating profit margin                          | 0.0962599                 | 0.0393269          | 2.448       | 0.014467    |
+| score                                            | 0.0004889                 | 0.0013412          | 0.365       | 0.715475    |
+| Sector Capital Goods:score                       | -0.0001681                | 0.0015621          | -0.108      | 0.914306    |
+| Sector Communications:score                      |  -0.0042493               | 0.0017534          | -2.424      | 0.015463    |
+| Sector Consumer Cyclical:score                   | -0.0027297                | 0.0016842          | -1.621      | 0.105232    |
+| Sector Consumer Non-Cyclical:score               | -0.0018256                | 0.0014738          | -1.239      | 0.215609    |
+| Sector Energy:score                              | 0.0016299                 | 0.0015617          | 1.044       | 0.296767    |
+| Sector Finance:score                             | 0.0015012                 | 0.0019832          | 0.757       | 0.449193    |
+| Sector Insurance:score                           | 0.0113320                 | 0.0040548          | 2.795       | 0.005247    |
+| Sector Technology:score                          | -0.0012630                | 0.0017571          | -0.719      | 0.472331    |
+| Sector Capital Goods:debt to assets              | 0.4305459                 | 0.3483380          | 1.236       | 0.216610    |
+| Sector Communications:debt to assets             | 1.0760472                 | 0.3395087          | 3.169       | 0.001552    |
+| Sector Consumer Cyclical:debt to assets          | 1.2045228                 | 0.3359646          | 3.585       | 0.000345    |
+| Sector Consumer Non-Cyclical:debt to assets      | 1.2952800                 | 0.3137599          | 4.128       | 3.81e-05    |
+| Sector Energy:debt to assets                     | 0.7970035                 | 0.3360730          | 2.372       | 0.017814    |
+| Sector Finance:debt to assets                    | 0.9745563                 | 0.4481241          | 2.175       | 0.029771    |
+| Sector Insurance:debt to assets                  | -2.6858273                | 1.4369379          | -1.869      | 0.061757    |
+| Sector Technology:debt to assets                 | 0.8265238                 | 0.3333951          | 2.479       | 0.013257    |
 
 Appendix B
+
+Model Assessment Output for Ordinal Logistic Regression Model
 
 ```{r echo=FALSE, results='hide', results='asis'}
 # Your table data
