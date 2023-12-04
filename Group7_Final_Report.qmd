@@ -208,6 +208,8 @@ grid.arrange(plot1, plot2, ncol = 2)
 bonds$marketCapitalization_new <- log(bonds$marketCapitalization)
 ```
 
+## Results
+
 ### Research Question 1
 
 This section will discuss the results from linear regression model and discuss them based on research question 1. Recall that research question 1 is: "Can we predict a certain bond's credit spread based on a company's fundamentals and the market's sentiment related to that company?" and have credit spread as the outcome variable.
