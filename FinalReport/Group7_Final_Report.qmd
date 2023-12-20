@@ -1,0 +1,676 @@
+## 
+
+---
+title: "Unraveling Credit Risk: Inference and Prediction Models for S&P 500 Bonds"
+author: "Kelly Tong, Rakeen Rouf, Lisa Wang, Javier Cervantes"
+date: 12/03/2023
+abstract: This analysis rigorously explores critical dimensions of credit risk based on a dataset compiled as of September 22, 2023, with a specific focus on bonds issued exclusively by S&P 500-listed companies. Encompassing essential information such as bond details, company fundamentals, credit ratings, and social sentiment indicators, the research addresses two central inquiries -- the determinants of a bond's credit rating and the predictability of credit spreads. Employing a linear regression model, the research introduces a model with a root mean squared error (RMSE) of 0.2676 and an R-squared of 0.6965 in predicting credit spreads. Addtionally, utilizing an ordinal regression model, the study unveils key insights, highlighting the substantial impact of factors like credit spread, market capitalization, and debt-to-assets ratio on credit ratings. This comprehensive exploration offers valuable implications for investors and financial analysts navigating the intricacies of credit risk within the dynamic financial landscape.
+format:
+  pdf:  
+    fontsize: 10pt
+    papersize: A4
+    margin-top: 20mm
+    margin-bottom: 20mm  
+    margin-left: 20mm
+    margin-right: 20mm
+execute:
+  echo: false
+  warning: false
+editor: visual
+---
+
+## Introduction
+
+In the intricate world of finance, evaluating and managing credit risk are pivotal in shaping investment strategies and influencing how the market moves. This research delves into a central financial issue --- understanding credit risk in bonds from companies listed in the S&P 500. As investors look for ways to optimize their portfolios and financial institutions aim for effective risk management, a deeper grasp of credit risk becomes crucial. In the ever-changing financial landscape, where market conditions and sentiment can swiftly impact investment results, tackling these questions is more than just an academic exercise; it's a practical need. The results of this analysis could refine how we assess credit risk, bringing tangible benefits to investors, financial analysts, and the broader financial world.
+
+We specifically focus on two research questions related to credit ratings:
+
+1.  **Can we predict a specific bond's credit spread by examining a company's fundamentals and market sentiment?**
+
+    -   Credit spread, a vital measure of credit risk, is on our prediction radar. By anticipating credit spreads, we aim to empower investors and financial institutions to proactively handle and reduce credit risk, ultimately aiding in making more informed investment decisions.
+
+2.  **What factors contribute to a bond's credit rating?**
+
+    -   A bond's credit score, like AAA or B+, is a numerical gauge of the issuer's reliability in repaying debts. We're delving into the elements that distinguish a bond with a high credit score from one with a lower score, aiming to uncover the factors that make a bond more trustworthy.
+
+To address our research questions, we curated data from diverse sources, ultimately utilizing a subset of holdings within an ETF that exclusively comprises companies listed in the S&P 500. This final dataset, tailored for analyzing the research problem, consists of 2,341 rows, each corresponding to a specific bond issued by an S&P 500 company. Across the dataset, 34 variables are distributed among four distinct categories:
+
+1.  **Bond information from iShare:** Information related to the bonds, including the issuer's name, industry sector, price, duration, yield to maturity, issuer's stock ticker, and market capitalization. Sourced from the USIG Ishares Credit Bond ETF[^group7_final_report-1]
+
+2.  **Company fundamentals from Yahoo Finance:** Company fundamentals, including various financial ratios (e.g., revenue, debt). Sourced from Yahoo Finance[^group7_final_report-2] using the yfinance package[^group7_final_report-3].
+
+3.  **Credit ratings from Bloomberg:** Credit ratings from Fitch, Moody's, and S&P, and a composite credit rating. Sourced from the Bloomberg Terminal[^group7_final_report-4]
+
+4.  **Social sentiment indicators from Finhubb API:** Social sentiment indicators including the number of positive and negative mentions on Reddit last year. Sourced from the Finnhub API[^group7_final_report-5]
+
+[^group7_final_report-1]: iShares by BlackRock (2023). Retrieved from https://www.ishares.com/us
+
+[^group7_final_report-2]: Yahoo! Finance (2023). Company profiles, income statements, balance sheets, and event/announcement details for various companies. Retrieved from http://finance.yahoo.com/
+
+[^group7_final_report-3]: yfinance (Version 0.2.29). (2023). Retrieved September 22, 2023, from https://pypi.org/project/yfinance/
+
+[^group7_final_report-4]: Bloomberg L.P. (2023). Retrieved from Bloomberg terminal https://www.bloomberg.com/professional/solution/bloomberg-terminal/
+
+[^group7_final_report-5]: Finnhub API (Version 1.0.0). (2023). Retrieved from https://finnhub.io/docs/api/introduction
+
+```{r echo=FALSE, results='hide', warning=FALSE}
+#reading dataset 
+bonds <- read.csv("credit_risk_data.csv")
+```
+
+```{r echo=FALSE, results='hide', warning=FALSE, message=FALSE}
+#loading packages
+library(dplyr)
+library(caret)
+library(ggplot2)
+library(corrplot)
+library(magrittr)
+library(knitr)
+library(gridExtra)
+library(gtsummary)
+library(caret)
+library(car)
+suppressMessages(library(tidyverse))
+library(MASS)
+library(lmtest) # For likelihood ratio test
+library(nnet) # package for multinomial model
+```
+
+## Methodology
+
+### Data Analysis and Data Cleaning
+
+In the initial phase of our analysis, we conducted a comprehensive Exploratory Data Analysis (EDA) to gain insights into the dataset and identify patterns, outliers, and potential relationships between variables.
+
+1.  **Distribution Plots:** We examined the distribution of variables using histograms, enhancing our understanding of skewness, kurtosis, and potential outliers. This guided decisions on collapsing categories.
+2.  **Primary Relationships:** We identified potential patterns, correlations, or associations between the outcome variable and predictors. For continuous variables, we utilized scatter plots to assess relationships with the outcome variable, while histograms and boxplots aided in evaluating categorical/ordinal variable relationships.
+3.  **Missing Values:** Given the different accounting practices of the different kinds of businesses in each of the Sectors in our universe, there are bound to be many (often very concentrated) NAs. Our approach consists in exploring the nature of those NAs to determine if those values should be removed, replaced or handled in any other way.
+4.  **Outlier Identification:** We actively analyzed outliers using boxplots and performed Cook's distance to identify influential points, making decisions on handling outliers during the EDA phase.
+5.  **Collinearity**: We assessed collinearity among the variables through a correlation matrix, leveraging the insights to guide model selection. Additionally, during model fitting, we examined variance inflation factor (VIF) to ensure there were no significant correlations.
+6.  **Variable Transformations:** We explore potential transformations like logarithmic or square root transformations to address issues such as skewed distributions or heteroscedasticity.
+
+After completing the Exploratory Data Analysis (EDA), we applied data cleaning procedures informed by our EDA findings to enhance the efficiency of subsequent modeling processes.
+
+### Research Question 1
+
+#### Technique
+
+To address Research Question 1, a linear regression model was employed with the aim of predicting a certain bond's credit spread based on a combination of company fundamentals and market sentiment. The choice of linear regression was driven by its suitability for capturing linear relationships between variables and providing insights into the impact of each predictor on the credit spread. The variables selected for the model were determined through a thoughtful combination of domain knowledge and Recursive Feature Elimination (RFE) to enhance the model's predictive capabilities.
+
+#### Assumptions
+
+The assumptions underlying the linear regression model include linearity, independence of residuals, homoscedasticity (constant variance of residuals), and normality of residuals. These assumptions were evaluated through diagnostic plots and statistical tests.
+
+#### Model Assessment
+
+The model was assessed based on statistical metrics such as the root mean squared error (RMSE), R-squared, mean absolute error (MAE), and F-statistics. Additionally, a 10-fold cross-validation was performed to gauge the model's generalization performance and avoid overfitting.
+
+### Research Question 2
+
+#### Technique
+
+For Research Question 2, focused on understanding the factors influencing a company's credit rating, an ordinal logistic regression model was employed. The ordinal nature of the outcome variable (Bloomberg Composite Credit Ratings) led to the selection of this statistical technique. Likelihood ratio tests were utilized for variable selection, and a reduced model was derived for interpretability.
+
+#### Assumptions
+
+The assumptions for Ordinal Logistic Regression are Linearity, Independence, and Proportional Odds. The Proportional Odds assumption demands that the relationship between the predictors and the odds of being in a higher category is constant across all levels of the dependent variable. The assumptions was carefully evaluated to ensure the model's reliability.
+
+#### Assessments
+
+The assessment of the ordinal logistic regression model involved likelihood ratio tests, confusion matrix analysis, and overall performance metrics such as accuracy, Kappa statistic, and the No Information Rate. These metrics were crucial for evaluating the model's predictive power and comparing it against a baseline approach.
+
+## Model Results and Discussion
+
+### Exploratory Data Analysis
+
+**Distribution Plots:**
+
+We plotted the below two outcome variables:
+
+-   The `Credit Spread` is a continuous outcome variable and represents the difference in yield or interest rate between a particular bond and a benchmark US Treasury bond.
+
+-   The `Credit Rating` is an ordinal categorical variable, and represents an equally weighted blend of the ratings of a security by Moody's, S&P, Fitch, and DBRS as published by Bloomberg
+
+\newpage
+
+Figure 1.1, 1.2: Distribution of Outcome Variables
+
+```{r, warning=FALSE, message=FALSE, fig.width=9, fig.height=3}
+#| echo: false
+bonds$BB_COMPOSITE_fac <- factor(bonds$BB_COMPOSITE, levels = c('AAA', 'AA+', 'AA', 'AA-', 'A+', 'A', 'A-', 'BBB+', 'BBB', 'BBB-', 'BB+'))
+plot_2 <- ggplot(bonds, aes(x = BB_COMPOSITE_fac, fill = BB_COMPOSITE_fac)) +
+  geom_bar() +
+  labs(x = "Bloomberg Composite Credit Rating", 
+       y = "Frequency", 
+       title = "Histogram of Credit Rating", 
+       fill = 'Credit rating') +
+  theme_minimal() +
+  theme(axis.text.x = element_blank())  # Remove x-axis ticks
+
+# Create the histogram plot
+plot_1 <- ggplot(bonds, aes(x = credit_spread)) +
+  geom_histogram(binwidth = 0.2, fill = "skyblue", color = "black") +
+  labs(x = "Credit spread (%)", 
+       y = NULL, 
+       title = "Histogram of Credit Spread") +
+  theme_minimal()
+
+grid.arrange(plot_1, plot_2, ncol = 2)
+```
+
+The Figure 1.1 illustrates that the outcome variable, credit spread, exhibits a slight rightward skew but maintains a generally normal distribution. While the Figure 1.2 demonstrates that there is a multitude of categories in Credit Ratings and Sector, with some having minimal data. This situation could lead to high standard errors and adversely affect the quality of our model. We collapsed the four highest ratings: AAA, AA+, AA & AA- into a single category called \>A+. Additionally, we collapsed the two lowest: BB+ and BBB- into \<BBB.
+
+Similarly, for the one of the predictor variable "Sector", we also collapsed some categories which had very few observations: Brokerage/Asset Managers/Exchanges and Reit were collapsed into Finance; Natural Gas and Electric were collapsed into Energy; Transportation was collapsed into Communications.
+
+```{r echo=FALSE, results='hide'}
+# collapsing credit ratings
+bonds$BB_COMPOSITE <- ifelse(bonds$BB_COMPOSITE %in% c("AAA", "AA+", "AA", "AA-"), ">A+", bonds$BB_COMPOSITE)
+bonds$BB_COMPOSITE <- ifelse(bonds$BB_COMPOSITE %in% c('BB+', 'BBB-'), "<BBB", bonds$BB_COMPOSITE)
+
+# Transform the 'bonds' column into an ordered factor
+bonds$BB_COMPOSITE <- factor(bonds$BB_COMPOSITE, levels = c("<BBB", "BBB", "BBB+", "A-", "A", "A+",  ">A+"))
+
+```
+
+```{r echo=FALSE, results='hide'}
+# Collapsing categories in Sector.
+bonds$Sector <- ifelse(bonds$Sector == "Brokerage/Asset Managers/Exchanges", "Finance", bonds$Sector)
+bonds$Sector <- ifelse(bonds$Sector == "Electric", "Energy", bonds$Sector)
+bonds$Sector <- ifelse(bonds$Sector == "Natural Gas", "Energy", bonds$Sector)
+bonds$Sector <- ifelse(bonds$Sector == "Reits", "Finance", bonds$Sector)
+bonds$Sector <- ifelse(bonds$Sector == "Transportation", "Communications", bonds$Sector)
+```
+
+**Primary Relationships:**
+
+We performed some a priori EDA along with some prior domain knowledge in order to adequately select the variables that show a relationship with the outcome of interest.
+
+Figure 2: Primary Relationships between the predictor variables and the outcome variables
+
+```{r, warning=FALSE, message=FALSE, fig.width=9, fig.height=3}
+plot1 <- ggplot(subset(bonds, BB_COMPOSITE %in% c('A-', 'BBB+', 'BBB')), aes(x = Duration, y = credit_spread)) +
+  geom_point() +
+  facet_wrap(~ BB_COMPOSITE) +
+  geom_smooth(method = 'lm', se = F) +
+  labs(x = 'Duration', y = 'Credit spread (%)', title = 'Credit spread vs Duration', subtitle = 'How does interest rate risk affect credit spread?')
+plot2 <- ggplot(bonds, aes(x = BB_COMPOSITE, y = score)) +
+  geom_boxplot() +
+  labs(x = 'Credit rating', y = 'Sentiment score', title = 'Sentiment score vs Credit rating', subtitle = 'What is the market\'s appetite for risk?')
+grid.arrange(plot1, plot2, ncol = 2)
+```
+
+**Missing values:** The dataset contains a concentration of missing values in company fundamental information obtained from Yahoo Finance, with approximately 300 missing values out of 2341 total observations, particularly in columns related to coverage ratios and liquidity ratios. This missingness is attributed to variations in accounting practices and the diverse nature of businesses in our dataset. Upon conducting exploratory data analysis (EDA), we discovered that, contrary to domain knowledge expectations, these variables showed no discernible relationship with our outcome variables, probably due to the missing data. Given that these predictors are likely to introduce additional variance and noise, we have opted to exclude them from our model.
+
+**Outlier Identification:** Upon conducting a box plot analysis on the variables, we identified outliers in several columns. Notably, observations in the Market Capitalization column exhibited very high values, and the Debt-to-Equity variable showed instances with values less than -100 and values exceeding 150. Nevertheless, these outliers are likely to represent genuine phenomena in the financial domain, given the inherent volatility of the business and the occasional one-off accounting nature of financial statements. When calculating ratios, values can swing wildly from quarter to quarter. Subsequent Cook's distance analysis, following model fitting, revealed that all values were below 0.03, indicating that extreme predictors did not significantly impact the model fit. Consequently, we have retained the outliers in our analysis, recognizing their potential relevance and minimal influence on the overall model performance.
+
+**Variable Transformations:** To conclude our EDA, we found that the Market capitalization variable seemed to have a non-linear relationship with our outcome and therefore could benefit from a log-transformation.
+
+```{r echo=FALSE, results='hide'}
+#log transformation of market capitalization since it is right-skewed
+bonds$marketCapitalization_new <- log(bonds$marketCapitalization)
+```
+
+### Research Question 1: Linear Regression Model
+
+This section will discuss the results from linear regression model and discuss them based on research question 1. Recall that research question 1 is: "Can we predict a certain bond's credit spread based on a company's fundamentals and the market's sentiment related to that company?" and have credit spread as the outcome variable.
+
+```{r echo=FALSE, results='hide'}
+credit_spread_priori <- lm(credit_spread ~ Sector + 
+                          Duration + 
+                          marketCapitalization_new + 
+                          BB_COMPOSITE + 
+                          debt_to_assets + 
+                          debt_to_equity + 
+                          int_coverage + 
+                          cash_coverage + 
+                          current_ratio + 
+                          cash_ratio + 
+                          roa + 
+                          ebitda_margin + 
+                          debt_service_coverage  + 
+                          score, 
+                          data=bonds) 
+summary(credit_spread_priori)
+```
+
+Table 1 includes the linear regression results from the most relevant predictors. Their statistical significance is demonstrated by a small p-value (smaller than 0.001). Understanding the financial concepts associated with the predictors and their correlation with the outcome variable credit spread (from data exploration section) support interpreting these output thoroughly.
+
+Duration, which measures the sensitivity of bond price to interest rates variation, is often used to reflect the bond's interest rate risk. The model result demonstrates that for every unit increase in duration, credit spread increases by 0.0285684 percentage points. This positive relationship can be understood through interest rate risk and default time risk. Longer-duration bonds are more sensitive to changes in interest rates. When interest rates rise, the prices of these bonds fall more sharply compared to short-duration bonds. Additionally, longer the duration of a bond, the longer the period over which the issuer must maintain its financial health to avoid default. These all lead to increase uncertainty, risk and risk premium, which are reflected by increased credit spread.
+
+Market capitalization is defined as the total market value of a company's outstanding shares of stock. This could indicate the size of a company. Market capitalization is transformed using a log transformation for the selected variable model. Here, every one unit increase of log of market capitalization will lead to a decrease of 0.1175721 of credit spread. As suggested by the model output, market capitalization is negatively correlated with credit spread. This might be due to the fact that larger company tend to have higher stock liquidity and stability, which contributes to lower investor risk and thus lower credit spread.
+
+BB composite, which measures credit rating, holds a negative correlation with credit spread as we set the default reference level to "smaller than BBB (\< BBB)." Financially, this inverse relationship also matches with our expectation, as credit spread tends to widen when credit rating drops due to increase potential risk and less liquidity with lower rated companies.
+
+Editda margin measures a company's operating profitability as a percentage of its revenue. The estimated coefficient suggests that as Editda margin increases by one unit, credit spread will decrease by 0.2333926 units. This inverse correlation is supported by its financial implications. A higher EBITDA margin indicates that a company is generating substantial earnings from its operations relative to its revenue, suggesting better financial health and efficiency. Thus companies with higher EBITDA margins are generally seen more capable of covering their interest expenses and other financial obligations. It can also increase investor confidence, which leads to lower yields demanded by investors. These all translate into lower credit spreads.
+
+```{r echo=FALSE, results='hide'}
+credit_spread <- lm(credit_spread ~ Sector + 
+                          Duration + 
+                          marketCapitalization_new + 
+                          BB_COMPOSITE + 
+                          roa + 
+                          ebitda_margin + 
+                          debt_to_assets + 
+                          operating_profit_margin + 
+                          score +
+                          score * Sector + 
+                          debt_to_assets * Sector, 
+                          data=bonds) 
+summary(credit_spread)
+```
+
+Table 1: Credit Spread Selected Variable Linear Regression Model Output (Partial)
+
+|                             |                           |                    |             |             |
+|----------------|---------------|---------------|----------|----------|
+| **Variables**               | **Estimated Coefficient** | **Standard Error** | **t-Value** | **p-Value** |
+| Duration                    | 0.0285684                 | 0.0013259          | 21.547      | \< 2e-16    |
+| Market Capitalization (new) | -0.1175721                | 0.0097427          | -12.068     | \< 2e-16    |
+| BB_COMPOSITEBBB             | -0.3224199                | 0.0225395          | -14.305     | \< 2e-16    |
+| BB_COMPOSITEBBB+            | -0.4991404                | 0.0263314          | -18.956     | \< 2e-16    |
+| BB_COMPOSITEA-              | -0.6629541                |  0.0317235         | -20.898     | \< 2e-16    |
+| BB_COMPOSITEA               | -0.7822065                | 0.0349459          | -22.383     | \< 2e-16    |
+|                             
+ BB_COMPOSITEA+               | -0.7956457                | 0.0372472          | -21.361     | \< 2e-16    |
+|                             
+ BB_COMPOSITE\>A+             | -0.8059875                | 0.0434127          | -18.566     | \< 2e-16    |
+| Ebitda margin               | -0.2333926                | 0.0493347          | -4.731      | 2.40e-06    |
+
+*Please find full model output in Appendix A.*
+
+##### Interaction term
+
+Interaction terms, (*shown in Appendix A*), though not statistically significant, do provide some potential practical significance as indicated by their results. Sector seems to have a large impact on the relationship between score and credit spread. This is shown by a negative estimated coefficient for some sectors (energy, finance, insurance), and positive for others. On the other hand, debt to assets seem to hold a positive relationship with credit spread regardless of the sectors. These inferences can be tested further with larger sample size and cleaner dataset.
+
+#### Model Assessment
+
+The Selected variable model refers to the final model used to answer research question 1. The selected variable model uses Recursive Feature Elimination to make a reduced model from the Priori model. The selected variables in this model can be seen in *Table 8* in the *Appendix A* section.
+
+From *Table 2*, we find that the root mean squared error (RMSE) from selected variable model is smaller than that of the priori model (0.2676 \< 0.2818). This suggests that the final model performs better. This might be due to the fact that interaction terms are added for the final model. Moreover, the RMSE values from cross validation are similar to RMSE from model output, which suggests that overfiting is avoided pretty well.
+
+R-squared from model output is 0.6965, which claims that 69.65% of the variation in dependent variable can be explained by the model. This is a better R-squared value compared to the priori model (0.6725). F-statistics can be used to test the overall significance of the model. While better F-statistics generally suggests higher significance, it needs to be interpreted in conjunction with the p-values. Though the second model has a lower F-statistics than the priori model (118.7 \< 125.4), it has a higher model complexity as it included interaction terms.
+
+Table 2: Cross Validation and Model Matrices
+
+|              |              |                  |                           |                             |
+|---------------|---------------|---------------|---------------|---------------|
+|              | Priori Model | Model (selected) | Cross Validation (Priori) | Cross Validation (selected) |
+| RMSE         | 0.2818       | 0.2676           | 0.2863259                 | 0.269756                    |
+| R-squared    | 0.6725       | 0.6965           | 0.6610463                 | 0.6860763                   |
+| MAE          | NA           | NA               | 0.2033042                 | 0.1938545                   |
+| F-statistics | 125.4        | 118.7            | NA                        | NA                          |
+
+```{r echo=FALSE, results='hide'}
+# Subset the original data
+subset_data_priori <- na.omit(bonds[, c("credit_spread", "Sector", "Duration", "marketCapitalization", "BB_COMPOSITE", "debt_to_equity", "int_coverage", "cash_coverage", "current_ratio", "cash_ratio", "debt_service_coverage", "roa", "ebitda_margin", "debt_to_assets", "score")])
+subset_data_selected <- na.omit(bonds[, c("credit_spread", "Sector", "Duration", "marketCapitalization_new", "BB_COMPOSITE", "roa", "ebitda_margin", "debt_to_assets", "operating_profit_margin", "score")])
+
+# Define formulas
+formula_priori <- credit_spread ~ Sector + 
+                          Duration + 
+                          marketCapitalization + 
+                          BB_COMPOSITE + 
+                          debt_to_assets + 
+                          debt_to_equity + 
+                          int_coverage + 
+                          cash_coverage + 
+                          current_ratio + 
+                          cash_ratio + 
+                          roa + 
+                          ebitda_margin + 
+                          debt_service_coverage  + 
+                          score
+
+formula_selected <- credit_spread ~ Sector + 
+                          Duration + 
+                          marketCapitalization_new + 
+                          BB_COMPOSITE + 
+                          roa + 
+                          ebitda_margin + 
+                          debt_to_assets + 
+                          operating_profit_margin + 
+                          score +
+                          score * Sector + 
+                          debt_to_assets * Sector
+
+# Set up training control
+set.seed(123)  # Setting seed for reproducibility
+train_control <- trainControl(method="cv", number=10)
+
+# Perform 10-fold cross-validation for the priori model
+cv_priori <- train(formula_priori, data=subset_data_priori, method="lm", trControl=train_control)
+
+# Perform 10-fold cross-validation for the selected variable model
+cv_selected <- train(formula_selected, data=subset_data_selected, method="lm", trControl=train_control)
+
+# Print the results
+print("cross validation for priori model: ") 
+print(cv_priori) 
+print("cross validation for selected variable model: ") 
+print(cv_selected) 
+```
+
+VIF is also processed for testing collinearity. All modified GVIF values (GVIF\^(1/(2\*Df))) (shown in *Table 8 Appendix B*) for selected predictors are less than 2. This shows that no serious collinearity exists for the model.
+
+```{r echo=FALSE, results='hide', warning=FALSE}
+vif_model <- vif(credit_spread, type = 'predictor')
+print(vif_model)
+```
+
+To verify that the assumptions for linear regression are met by the model, diagnostic plots on residuals are plotted (*Figure 3*). The plot on residuals and fitted values does not provide enough evidence to prove that the linearity assumption was violated, as the residuals are randomly distributed around the horizontal axis (at zero). The Q-Q residuals plot verifies the normality of residual assumption as the points fall approximately in a straight line. The scale location plot have residuals spread evenly across all levels of fitted value, which confirms that no strong evidence suggests violation of the homoscedasticity assumption. The last plot on residual and leverage shows that there is no evidence for influential points as there are no points outside of the cook's distance boundaries.
+
+\newpage
+
+Figure 3: Diagnostic Plots For Model Output
+
+```{r echo=FALSE, warning=FALSE, fig.width=10, fig.height=3}
+par(mfrow=c(1, 4))
+plot(credit_spread)
+```
+
+### Research Question 2: Ordinal Logistic Regression Model 
+
+In this section, we will delve into the outcomes derived from our research question 2. Recall that research question 2 is: "What factors influence a company's credit rating?" The goal of this analysis is to find out which factors contribute to the credit rating of a company. This analysis is based on a subset of the data described in the data overview section. The number of observations are relatively evenly separated into 7 ordered categories of credit ratings. Therefore, a Ordinal Logistic Regression model is used to answer the research question.
+
+##### Full Model
+
+A Priori variable selection was done to make the initial model. The A priori variables were selected based on our EDA and domain knowledge. One variable "Market Capitalization" underwent a log transformation. In financial contexts, it is common for the impact of large values to be disproportionately influential. For a metric like Market Capitalization, where a few companies might have extremely large values, taking the log helps to mitigate this effect, making the relationship between Market Capitalization and credit rating more interpretable. Below you can see a representation of our initial model.
+
+```{r, echo=FALSE, results='hide'}
+# full model
+bonds$roa <- bonds$roa * 100  # getting it in the percentage scale
+ord_mod <- polr(BB_COMPOSITE ~ score + Duration + credit_spread + debt_to_assets + operating_profit_margin + ebitda_margin + roa + debt_to_equity + log(marketCapitalization), data=bonds, Hess=TRUE)
+summary(ord_mod)
+```
+
+##### Reduced Model
+
+With the goal of making the final model easier to interpret and understand, less susceptible to over-fitting, and increased generality , Likelihood Ratio Tests were performed to prune statistically insignificant predictors. If the p-value from the likelihood ratio test is more than the chosen significance level, the null hypothesis may not be rejected.
+
+```{r echo=FALSE, results='hide'}
+# Assuming original_df is your original data frame
+df_r <- bonds[, c("BB_COMPOSITE", "score",  "Duration", "credit_spread", "debt_to_assets", "operating_profit_margin", "ebitda_margin", "roa", "marketCapitalization")]
+
+df_r <- na.omit(df_r)
+
+# Define the reduced model (without the variable to be tested)
+reduced_model <- polr(BB_COMPOSITE ~ score + Duration + credit_spread + debt_to_assets + operating_profit_margin + ebitda_margin + roa + log(marketCapitalization), data = df_r, Hess=TRUE)
+
+# Perform likelihood ratio test
+lr_test <- lrtest(ord_mod, reduced_model)
+
+# Print the results
+print(lr_test)
+```
+
+Table 3: Result of Likelihood ratio test on Debt to Equity Ratio
+
+| Log Likelihood | Df  | Chi-Square | Pr(\>Chi-Square) |
+|----------------|-----|------------|------------------|
+| -2300.8        | -1  | 0.3017     | 0.5828           |
+
+The table above shows the results of the Likelihood Ratio test performed on the model that removed `debt to equity ratio`. The null hypothesis (H0) for this test is that adding **`debt to equity ratio`** does not significantly improve the model fit. The chi-squared statistic is noted to be 0.3017 with 1 degree of freedom, resulting in a p-value of 0.5828. The p-value is noted to be greater than the typical significance level of 0.05, suggesting that there is not enough evidence to reject the null hypothesis. Therefore, based on the likelihood ratio test, removing the **`debt to equity rtatio`** variable does not have a relevant impact on model fit, and Model 2 may be preferred due to its simplicity. Therefore the `debt to equity ratio` was dropped from the model.
+
+##### Interaction term
+
+Despite having identified Sector as a potential interaction term in our analysis plan, the interaction term was not included in the final model. The chosen interaction variable was introducing perfect separability in the model. The "Sector" variable was therefore dropped to address the numerical instability and convergence problems that can arise when estimating the model parameters. By removing the variable, we can avoid the situation where certain levels of the "Sector" variable perfectly predict specific credit score categories, making the model more stable and avoiding potential issues like infinite coefficients or standard errors.
+
+```{r echo=FALSE, results='hide', warning=FALSE, message=FALSE}
+pvals <- pnorm(-abs(summary(reduced_model)$coef[,"t value"]))*2
+ctable <- cbind(summary(reduced_model)$coef,pvals)
+
+print(ctable)
+
+exp_coefs <- exp(cbind(OR=coef(reduced_model),confint(reduced_model)))
+print(exp_coefs)
+```
+
+##### Model Assessment
+
+To evaluate the validity of the model, our team conducted a thorough examination, mirroring the assumption verification steps employed for research question 1. This scrutiny revealed that none of the conditions were violated. Below you can see the results to assess the final model's multicollinearity, proportional odds assumption and overall performance.
+
+```{r echo=FALSE, results='hide'}
+vif(reduced_model)
+```
+
+Table 4: Variance Inflation Factors (VIF) for the final model
+
+| Predictor                    | VIF  |
+|------------------------------|------|
+| Sentiment Score              | 1.15 |
+| Duration                     | 1.26 |
+| Credit Spread                | 1.31 |
+| Debt to Assets               | 1.09 |
+| Operating Profit Margin      | 1.23 |
+| EBIDTA Margin                | 1.38 |
+| Return on Assets (ROA)       | 1.55 |
+| Log of Market Capitalization | 1.19 |
+
+In general, VIF values around 1 indicate low multicollinearity, and values above 5 or 10 are often considered concerning. The results from the table above suggest that the predictors in our final model are not highly correlated with each other.
+
+```{r echo=FALSE, results='hide'}
+# using multinomial logistic regression
+mult_mod <- multinom(BB_COMPOSITE ~ 
+                       score + 
+                       Duration + 
+                       credit_spread + 
+                       debt_to_assets + 
+                       operating_profit_margin + 
+                       ebitda_margin + 
+                       roa + log(marketCapitalization), 
+                     data = df_r)
+
+new.data <- df_r[sample(nrow(df_r)), ]
+new.data <- head(df_r, 10)
+
+predict(mult_mod, new.data, type="probs")
+# using ordinal regression
+predict(reduced_model, new.data, type="probs")
+```
+
+To check the proportional odds assumption the group fit a multinational logistic regression model with the same variables as the final ordinal regression model. The two tables in the *Appendix C (Table 9, 10)* section show predictions from each of the models, on 10 randomly selected observations from out data set. The predicted probabilities for all the categories were similar enough to conclude that the proportional odds assumption was not violated.
+
+Figure 4: Confusion Matrix for Final Ordinal Model
+
+```{r echo=FALSE, results='asis', fig.width=5, fig.height=3}
+df_filtered <- df_r
+df_filtered <- na.omit(df_filtered)
+conf_matrix <- confusionMatrix(predict(ord_mod), na.omit(df_filtered)$BB_COMPOSITE, mode = 'everything')
+
+# Assuming conf_matrix is your confusion matrix object
+library(ggplot2)
+
+conf_matrix_df <- as.data.frame(as.table(conf_matrix$table))
+
+ggplot(conf_matrix_df, aes(x = Reference, y = Prediction, label = Freq)) +
+  geom_tile(aes(fill = Freq), color = "white") +
+  geom_text(color = "black") +
+  scale_fill_gradient(low = "lightblue", high = "darkblue") +
+  theme_minimal()
+
+```
+
+\newpage
+
+Table 5: Overall Performance Statistics from the final model
+
+| Metric                  | Score            |
+|-------------------------|------------------|
+| Accuracy                | 53.23%           |
+| 95% Confidence Interval | 50.98% to 55.46% |
+| Kappa                   | 0.4047           |
+| No Information Rate     | 33.61 %          |
+
+To check the overall performance of the final model, a confusion matrix shown in the figure above was produced. The overall statistics from the confusion matrix is showed in the table table above. The overall accuracy indicates that the model correctly predicted the credit ratings for approximately 53.23% of the observations. The Kappa statistic measures the agreement between the predicted and actual ratings, considering the agreement occurring by chance. A Kappa value of 0.4047 suggests a moderate level of agreement beyond chance. The No Information Rate represents the accuracy achieved by always predicting the most frequent class. The model outperforms this baseline accuracy significantly. In summary, the model demonstrates a moderate level of accuracy and agreement, outperforming a baseline approach that predicts the most frequent class.
+
+##### Model Results
+
+```{r echo=FALSE, results='hide', warning=FALSE, message=FALSE}
+```
+
+Table 6: Final Model Results
+
+| Predictor Variables          | Odds Ratio | 2.5%  | 97.5% | P-Value |
+|------------------------------|------------|-------|-------|---------|
+| Sentiment Score              | 0.999      | 0.995 | 1.003 | 0.598   |
+| Duration                     | 1.132      | 1.101 | 1.155 | \<0.01  |
+| Credit Spread                | 0.012      | 0.008 | 0.017 | \<0.01  |
+| Debt to Assets Ratio         | 0.078      | 0.042 | 0.142 | \<0.01  |
+| Operating Profit Margin      | 0.303      | 0.189 | 0.483 | \<0.01  |
+| EBIDTA Margin                | 0.779      | 0.460 | 1.318 | 0.353   |
+| Return on Assets (ROA)       | 1.131      | 1.087 | 1.178 | \<0.01  |
+| Log of Market Capitalization | 2.960      | 2.635 | 3.330 | \<0.01  |
+
+The table above answers our research question and shows us the statistical relationship between each of our predictor variables and credit rating of a company.
+
+Some of the most compelling relationships found are as follows.
+
+The model shows a high degree of correlation between Credit Spread and Credit Rating. Intuitively, the higher the credit spread for a certain bond, the more likely that the bond has a lower credit rating. As we can see from the table, keeping all else constant, increasing credit spread by 1 unit drops the odds of moving to the next higher rating by 98.8%. This confirms our initial intuition.
+
+The model shows a high degree of correlation between log of Market Capitalization and Credit Rating. Intuitively, larger market capitalization generally implies a larger and more stable company. In line with our intuition, the final model suggests, keeping all else constant, increasing the log of Market Capitalization by on unit, leads to 196% increase in the odds of moving to the next higher credit rating.
+
+The final model shows a high degree of correlation between Debt to Asset ratio and Credit Rating. As the amount of debt that a company holds relative to the assets it holds increases, we would expect the company's riskiness to increase. Our model suggests that, keeping all else constant, for a 1 unit increase in the debt to assets ratio, the odds of moving to the next higher category decreases by 92.2%.
+
+According to the final model, Sentiment Score and EBIDTA Margin were not statistically significant predictors for credit rating. This was concluded due to their p-values being above the chosen significance level of 0.05.
+
+Investors often rely on credit ratings to assess the creditworthiness of companies before making investment decisions. The insights gained from these results can guide investors in evaluating the risk associated with companies' financial profiles, helping them make more informed and prudent investment choices.
+
+## Conclusion
+
+In conclusion, this research, conducted on a dataset as of September 22, 2023, delves deeply into critical dimensions of credit risk, with a specific emphasis on bonds issued by companies listed in the S&P 500. And use linear regression to predict the credit sperad and use ordinal logistic regression to infer the credit rating. Specifically, there are several advantanges of the study. First, its innovative in combining different data sources, such as sentiment score and company information. These gives us new insights. Secondly, the data was acquared in the sep, 2023, so it is a new dataset and provide us timely undrestanding of the questions. Thirdly, the study followed a rigourous step and provide valid and credible resutls. The findings hold practical implications for stakeholders navigating the complexities of credit risk. Investors and financial analysts can leverage the identified determinants to make more informed decisions, considering not only the inherent qualities of a bond but also the broader market dynamics and sentiment.
+
+The studies still bear some limitation:
+
+1.  **Dependence Among Rows:** One notable limitation of the analysis arises from the potential lack of independence among rows. Since multiple rows correspond to bonds issued by the same company, there may be interdependence among observations. A hierarchical modeling approach, incorporating random effects for companies, could address this issue by capturing the inherent correlation within the data
+2.  **Generalization to Broader Market Dynamics:** The analysis focuses on bonds issued by companies listed in the S&P 500, limiting the generalizability of our findings to a broader market context. The dynamics of credit risk assessment may differ for companies outside this scope, and caution should be exercised when extending our conclusions to a more diverse range of entities.
+3.  **Non-Time Series Analysis:** It's essential to highlight that the study does not employ a time series analysis. This limitation restricts our ability to capture temporal dynamics and trends in credit risk over time. Future research endeavors could delve into time-series methodologies, providing a more comprehensive understanding of how credit risk evolves and responds to varying economic conditions.
+
+Moving forward, our commitment to advancing this work includes:
+
+1.  **Machine Learning Model Refinement:** Delving into advanced machine learning algorithms, exploring ensemble methods, or tailoring deep learning architectures specifically for credit risk assessment holds the potential to uncover novel avenues for improving predictive accuracy and unlocking additional dimensions of insight.
+2.  **Incorporate External Economic Indicators:** Integrate external economic indicators, such as interest rates, inflation, and GDP growth, into the analysis. Explore their impact on credit risk and assess how macroeconomic conditions influence the creditworthiness of companies and the corresponding bond markets.
+3.  **Stakeholder Engagement and User Feedback:** Engage with stakeholders, including investors, financial institutions, and industry experts, to gather feedback on the analysis outcomes. Understand user needs and perspectives to tailor future research efforts to address practical challenges faced by the financial community.
+
+\
+In summary, recognizing the study's achievements, constraints, and proposed future avenues, this research lays a crucial foundation for understanding credit risk in the dynamic financial environment. Our ongoing endeavors to refine methodologies and data aspire to elevate predictive accuracy and interpretative capabilities in credit risk models, offering actionable insights for investors and financial analysts in navigating the intricacies of the bond market.
+
+\newpage
+
+## Appendix
+
+Appendix A:
+
+Table 7: Complete Selected Variable Model Output for Linear Regression Model
+
+|                                                  |                           |                    |             |             |
+|---------------|---------------|---------------|---------------|---------------|
+| **Variables**                                    | **Estimated Coefficient** | **Standard Error** | **t-Value** | **p-Value** |
+| (Intercept)                                      | 1.5754080                 | 0.1509072          | 10.440      | \< 2e-16    |
+| Sector Capital Goods                             | -0.1750492                | 0.1229968          | -1.423      | 0.154841    |
+| Sector Communications                            | -0.3175768                | 0.1481979          | -2.143      | 0.032245    |
+| Sector Consumer Cyclical                         | -0.3680503                | 0.1270225          | -2.898      | 0.003804    |
+| Sector Consumer Non-Cyclical                     | -0.4893863                | 0.1097489          | -4.459      | 8.71e-06    |
+| Sector Energy                                    | 0.0232967                 | 0.1218494          | 0.191       | 0.848395    |
+| Sector Finance                                   | -0.0369242                | 0.1949179          | -0.189      | 0.849772    |
+| Sector Insurance                                 | 1.2926838                 | 0.4825983          | 2.679       | 0.007457    |
+| Sector Technology                                | -0.1600794                | 0.1252922          | -1.278      | 0.201529    |
+| Duration                                         | 0.0285684                 | 0.0013259          | 21.547      | \< 2e-16    |
+| market Capitalization new                        | -0.1175721                | 0.0097427          | -12.068     | \< 2e-16    |
+| BB COMPOSITE BBB                                 | -0.3224199                | 0.0225395          | -14.305     | \< 2e-16    |
+| BB COMPOSITE BBB+                                | -0.4991404                | 0.0263314          | -18.956     | \< 2e-16    |
+| BB COMPOSITE A-                                  | -0.6629541                |  0.0317235         | -20.898     | \< 2e-16    |
+| BB COMPOSITE A                                   | -0.7822065                | 0.0349459          | -22.383     | \< 2e-16    |
+|                                                  
+ BB COMPOSITE A+                                   | -0.7956457                | 0.0372472          | -21.361     | \< 2e-16    |
+|                                                  
+ BB COMPOSITE \>A+                                 | -0.8059875                | 0.0434127          | -18.566     | \< 2e-16    |
+| roa                                              | -0.4292678                | 0.3680788          | -1.166      | 0.243663    |
+| ebitda_margin                                    | -0.2333926                | 0.0493347          | -4.731      | 2.40e-06    |
+| debt to assets                                   | -0.7610665                | 0.3044289          | -2.500      | 0.012503    |
+| operating profit margin                          | 0.0962599                 | 0.0393269          | 2.448       | 0.014467    |
+| score                                            | 0.0004889                 | 0.0013412          | 0.365       | 0.715475    |
+| Sector Capital Goods:score                       | -0.0001681                | 0.0015621          | -0.108      | 0.914306    |
+| Sector Communications:score                      |  -0.0042493               | 0.0017534          | -2.424      | 0.015463    |
+| Sector Consumer Cyclical:score                   | -0.0027297                | 0.0016842          | -1.621      | 0.105232    |
+| Sector Consumer Non-Cyclical:score               | -0.0018256                | 0.0014738          | -1.239      | 0.215609    |
+| Sector Energy:score                              | 0.0016299                 | 0.0015617          | 1.044       | 0.296767    |
+| Sector Finance:score                             | 0.0015012                 | 0.0019832          | 0.757       | 0.449193    |
+| Sector Insurance:score                           | 0.0113320                 | 0.0040548          | 2.795       | 0.005247    |
+| Sector Technology:score                          | -0.0012630                | 0.0017571          | -0.719      | 0.472331    |
+| Sector Capital Goods:debt to assets              | 0.4305459                 | 0.3483380          | 1.236       | 0.216610    |
+| Sector Communications:debt to assets             | 1.0760472                 | 0.3395087          | 3.169       | 0.001552    |
+| Sector Consumer Cyclical:debt to assets          | 1.2045228                 | 0.3359646          | 3.585       | 0.000345    |
+| Sector Consumer Non-Cyclical:debt to assets      | 1.2952800                 | 0.3137599          | 4.128       | 3.81e-05    |
+| Sector Energy:debt to assets                     | 0.7970035                 | 0.3360730          | 2.372       | 0.017814    |
+| Sector Finance:debt to assets                    | 0.9745563                 | 0.4481241          | 2.175       | 0.029771    |
+| Sector Insurance:debt to assets                  | -2.6858273                | 1.4369379          | -1.869      | 0.061757    |
+| Sector Technology:debt to assets                 | 0.8265238                 | 0.3333951          | 2.479       | 0.013257    |
+
+Appendix B: VIF Test for Linear Regression Model
+
+Table 8: VIF Output and GVIF Values
+
+|        Variables        |     GVIF     | Degree of freedom | **GVIF\^(1/(2\*Df))** |
+|:-----------------:|:----------------:|:----------------:|:----------------:|
+|         Sector          | 2.182726e+01 |        26         |       1.061085        |
+|        Duration         | 1.055998e+00 |         1         |       1.027618        |
+|  Market Capitalization  | 2.762059e+00 |         1         |       1.661944        |
+|      BB COMPOSITE       | 1.383921e+01 |         6         |       1.244780        |
+|           roa           | 2.527011e+00 |         1         |       1.589658        |
+|      ebitda margin      | 2.544020e+00 |         1         |       1.594998        |
+|     debt to assets      | 3.081602e+07 |        17         |       1.660574        |
+| operating profit margin | 1.623157e+00 |         1         |       1.274032        |
+|          score          | 2.580289e+09 |        17         |       1.891532        |
+
+Appendix C
+
+Model Assessment Output for Ordinal Logistic Regression Model
+
+```{r echo=FALSE, results='hide', results='asis'}
+# Your table data
+table_data <- matrix(c(
+  0.2242139, 0.6051642, 0.14030691, 0.02792946, 0.0023849073, 6.416369e-07, 3.674757e-08,
+  0.2437800, 0.5567623, 0.15654999, 0.03867288, 0.0042330414, 1.674667e-06, 1.713898e-07,
+  0.1439689, 0.3666926, 0.27248873, 0.16293009, 0.0537281156, 1.081668e-04, 8.337934e-05,
+  0.2990506, 0.5868950, 0.09780077, 0.01531411, 0.0009392902, 1.596220e-07, 6.019318e-09,
+  0.4084235, 0.4128777, 0.13009476, 0.04256727, 0.0060319564, 3.800697e-06, 1.084274e-06,
+  0.1187189, 0.3321557, 0.28483547, 0.19080054, 0.0731312892, 1.823555e-04, 1.757606e-04,
+  0.1940544, 0.4869222, 0.22032010, 0.08316607, 0.0155202451, 1.343427e-05, 3.553851e-06,
+  0.1538599, 0.4069585, 0.26338607, 0.13731238, 0.0383897519, 6.025239e-05, 3.313163e-05,
+  0.1684379, 0.4240143, 0.25266586, 0.12324631, 0.0315709108, 4.372969e-05, 2.104435e-05,
+  0.2225623, 0.3981325, 0.23057913, 0.11784309, 0.0308088782, 4.552338e-05, 2.850320e-05
+), ncol = 7, byrow = TRUE)
+
+# Create a data frame from the matrix with updated column names
+column_names <- c("<BBB", "BBB", "BBB+", "A-", "A", "A+", ">A+")
+colnames(table_data) <- column_names
+table_df <- as.data.frame(table_data)
+table_df <- as.data.frame(round(table_data, 3))
+
+# Print the table
+knitr::kable(table_df, caption = "Predicted Probabilities for Each Category (Multinomial Regression)")
+```
+
+```{r echo=FALSE, results='hide', results='asis'}
+# Your table data
+table_data <- matrix(c(
+  0.08011782, 0.6506046, 0.1850589, 0.05810348, 0.02100391, 0.003772451, 0.0013388737,
+  0.06255257, 0.6126661, 0.2176088, 0.07335475, 0.02715647, 0.004914369, 0.0017468711,
+  0.01697703, 0.3328651, 0.3333188, 0.19771491, 0.09386911, 0.018539347, 0.0067157405,
+  0.12146447, 0.6901299, 0.1336453, 0.03814844, 0.01338588, 0.002382144, 0.0008438434,
+  0.05430691, 0.5871680, 0.2361191, 0.08332501, 0.03134917, 0.005702561, 0.0020292303,
+  0.01394272, 0.2918806, 0.3325592, 0.21985947, 0.11108338, 0.022484361, 0.0081903310,
+  0.03327161, 0.4841775, 0.2937613, 0.12524190, 0.05071325, 0.009453174, 0.0033812564,
+  0.02048938, 0.3740887, 0.3285359, 0.17644867, 0.07949408, 0.015392129, 0.0055511284,
+  0.02293579, 0.3994918, 0.3231672, 0.16391533, 0.07178464, 0.013755675, 0.0049496319,
+  0.02391952, 0.4090337, 0.3207121, 0.15932222, 0.06908037, 0.013189799, 0.0047422792
+), ncol = 7, byrow = TRUE)
+
+# Create a data frame from the matrix with updated column names
+column_names <- c("<BBB", "BBB", "BBB+", "A-", "A", "A+", ">A+")
+colnames(table_data) <- column_names
+table_df <- as.data.frame(round(table_data, 3))
+
+# Print the table
+knitr::kable(table_df, caption = "Predicted Probabilities for Each Category (Ordinal Regression)")
+```
